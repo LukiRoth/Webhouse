@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Home Automation Control Panel</title>
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Include jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <!-- Include jQuery UI -->
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
+
+    <!-- Include RoundSlider CSS and JS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/round-slider@1.3.3/dist/roundslider.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/round-slider@1.3.3/dist/roundslider.min.js"></script>
+
+    <!-- Include Icon Library-->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+
+    <!-- Include Round Slider V2-->
+    <link rel="stylesheet" href="roundslider.min.css">
+
+</head>
+<body>
+    <header>
+        <!-- Time and Weather -->
+        <div id="time-and-weather">
+            <div id="location">Biel/Bienne:</div>
+            <div id="date"></div>
+            <div id="time"></div>
+            <div id="weather">Weather: 22°C <img src="weather-icon.png" alt="Weather Icon" id="weather-icon"></div>
+        </div>
+        <h1>Home Automation</h1>
+        <!-- Menu button -->
+        <button id="menu-button">☰</button>
+        <!-- Slide-in menu -->
+        <div id="slide-menu">
+            <ul>
+                <li><button id="sun-btn" type="button"><i class="fas fa-sun"></i></button></li>
+                <li><button id="cloud-btn" type="button"><i class="fas fa-cloud"></i></button></li>
+                <li><button id="rain-btn" type="button"><i class="fas fa-cloud-rain"></i></button></li>
+                <li><button id="snow-btn" type="button"><i class="fas fa-snowflake"></i></button></li>
+                <li><button id="ghost-btn" type="button"><i class="fas fa-ghost"></i></button></li>
+                <li><button id="auto-btn" type="button"><i class="fas fa-robot"></i></button></li>
+            </ul>
+        </div>
+    </header>
+
+    <div class="container">
+        <main>
+          <section id="tv-control" class="control-container">
+            <h2>TV</h2>
+            <div id="button-container">
+                <button id="tv-toggle" type="button"><i class="fas fa-power-off"></i>
+            </div>
+          </section>
+      
+          <section id="heater-control" class="control-container-slider">
+            <h2>Heater</h2>
+            <div class="roundslider-container">
+                <button id="heater-minus-btn">-</button>
+                <div id="heater-slider" class="roundslider"></div>
+                <button id="heater-plus-btn">+</button>
+            </div>
+          </section>
+      
+          <section id="alarm-control" class="control-container">
+            <h2>Alarm</h2>
+            <div id="button-container">
+                <button id="auto-btn" type="button"><i class="fas fa-bell"></i>
+            </div>
+          </section>
+      
+          <section id="lamp1-control" class="control-container-slider">
+            <h2>Lamp 1</h2>
+            <div class="roundslider-container">
+                <button id="lamp-minus-btn">-</button>
+                <div id="lamp-slider" class="roundslider"></div>
+                <button id="lamp-plus-btn">+</button>
+            </div>
+          </section>
+      
+          <section id="lamp2-control" class="control-container">
+            <h2>Lamp 2</h2>
+            <div id="button-container">
+                <button id="lamp2-toggle" type="button"><i class="fas fa-lightbulb"></i>
+            </div>
+          </section>
+      
+          <section id="lamp3-control" class="control-container">
+            <h2>Lamp 3</h2>
+            <div id="button-container">
+                <button id="lamp3-toggle" type="button"><i class="fas fa-lightbulb"></i>
+            </div>
+          </section>
+        </main> 
+    </div>
+    
+    <footer>
+        <p>Webhouse created by rothl18 and begep1 © 2023</p>
+    </footer>
+
+    <script src="app.js"></script>
+    <script src="roundslider.js"></script>
+
+</body>
+</html>

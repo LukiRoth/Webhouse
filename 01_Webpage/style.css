@@ -1,0 +1,423 @@
+/* Root variables for easy theme management */
+:root {
+    /* Color variables */
+
+    --primary-color: #0f4c75;
+    --primary-color1: #3282b8;
+    --secondary-color: #2a9d8f;
+    --text-color: #051923;
+    --background-color: #ffffff;
+    --hover-color: #283d3b;
+    --activate-color: #3282b8;
+    --box-color: #e7ecef;
+    --button-color: #1b262c;
+    --footer-background-color: #3282b8;
+    --menu-button-color: #000000;
+    --menu-background-color: #e7ecef;
+    --slider-primary-color: #3282b8;
+    --slider-secondary-color: #bbe1fa;
+    
+    /* Spacing variables */
+    --base-margin: 1%;
+    --base-padding: 5vh;
+    --small-padding: 0.5%;
+    --menu-width: 4vw;
+    --menu-event-button-size: 3vw;
+    --menu-event-button-icon: 1.5vw;
+    --button-margin: 1vh;
+}
+
+/* Base styling */
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden; /* Prevents scrolling */
+}
+
+/* Body layout */
+body {
+    display: flex;
+    flex-direction: column; /* Vertical stacking */
+}
+
+/* Header styling */
+header {
+    position: relative;
+    background-color: var(--primary-color);
+    color: #e7ecef;
+    display: flex; /* Use flexbox for layout */
+    justify-content: center; /* Center content horizontally */
+    align-items: center; /* Center content vertically */
+    text-align: center;
+    padding: 0.1vh;
+    font-weight: bold; /* Make the font bold */
+    font-family: 'Arial', sans-serif; /* Change the font family */
+}
+
+/* Main content layout */
+.main-content {
+    flex-grow: 1; /* Occupies available space */
+    display: flex;
+    justify-content: center; /* Horizontally center content */
+    align-items: center; /* Vertically center content */
+}
+
+/* Container for central elements */
+.container {
+    width: 100vw; /* Relative width */
+    height: 100vh; /* Relative height */
+    display: flex;
+    flex-direction: column; /* Vertical stacking */
+    justify-content: center; /* Vertical centering */
+    align-items: center; /* Horizontal centering */
+}
+
+/* Grid layout for main content */
+main {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-gap: 3%;
+    padding: 1%;
+    justify-content: center; /* Center items horizontally */
+    align-items: center; /* Center items vertically */
+}
+
+section {
+    padding: 5em 1em;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+section > div {
+    margin: 0.5em;
+}
+
+/* Styling for control boxes */
+.control-box {
+    background-color: var(--box-color);
+    padding: 1%;
+    border-radius: 5px;
+    color: var(--text-color);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1%;
+    width: 28vw;
+    height: 30vh; 
+}
+
+/* Styling for control box headers */
+.control-box h2 {
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+    color: var(--text-color);
+}
+
+/* Button and alarm indicator styling */
+button, .alarm-indicator {
+    padding: var(--small-padding) var(--base-padding);
+    font-size: 1rem;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    background-color: var(--button-color);
+    color: white;
+    text-align: center;
+}
+
+/* Animation for active alarm indicators */
+.alarm-indicator.active {
+    animation: blinker 1s linear infinite;
+}
+
+/* Blinker animation keyframes */
+@keyframes blinker {
+    50% {
+        opacity: 0;
+    }
+}
+
+/* Footer styling */
+footer {
+    text-align: center;
+    padding: 0.1vh;
+    background-color: var(--footer-background-color);
+    color: white;
+    text-align: center; /* Center the text horizontally */
+    font-family: 'Arial', sans-serif; /* Change the font family */
+}
+
+/* Slide-in menu styling */
+#slide-menu {
+    position: fixed;
+    top: 0;
+    right: calc(-1 * var(--menu-width)); /* Initially hidden */
+    width: var(--menu-width);
+    height: 100vh;
+    background-color: var(--menu-background-color);
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+    z-index: 99;
+    transition: right 0.5s; /* Animation for sliding effect */
+}
+
+/* Menu button styling */
+#menu-button {
+    position: absolute;
+    top: 50%;
+    right: 1%;
+    transform: translateY(-50%);
+    color: white;
+    z-index: 100;
+    transition: right 0.5s;
+
+    /* Set width and height for a square button */
+    width: 5vh; /* Adjust as needed */
+    height: 5vh; /* Height is the same as width to form a square */
+    
+    /* Adjust font size and padding */
+    font-size: 3vh; /* Smaller font size */
+    padding: 0; /* Remove padding */
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box; /* Include padding and borders in the element's total width and height */
+}
+
+/* Adjusts menu button when menu is active */
+.menuActive #menu-button {
+    right: calc(1% + var(--menu-width));
+}
+
+/* Slide menu list styling */
+#slide-menu ul {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+/* Slide menu list item styling */
+#slide-menu ul li {
+    width: 100%; /* Full width of the parent */
+    display: flex;
+    justify-content: center; /* Center horizontally */
+    align-items: center; /* Center vertically */
+    margin-bottom: var(--button-margin); /* Consistent spacing */
+}
+
+/* Slide menu link styling */
+#slide-menu ul li a {
+    display: block;
+    padding: 10px;
+    text-decoration: none;
+    color: black;
+    width: 100%; /* Full width for alignment */
+    text-align: center; /* Center the text */
+}
+
+/* Slide menu button styling */
+#slide-menu ul li button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--menu-event-button-size);
+    height: var(--menu-event-button-size);
+    border-radius: 50%;
+    border: none;
+    background-color: var(--button-color); 
+    color: var(--background-color);
+    font-size: var(--menu-event-button-icon);
+    cursor: pointer;
+    padding: 0;
+    margin-top: 15px;
+}
+
+/* Hover effect for menu buttons */
+#slide-menu ul li button:hover {
+    background-color: var(--hover-color);
+}
+
+/* Time and weather display styling */
+#time-and-weather {
+    position: absolute; /* Positioned relative to the header */
+    top: 50%;
+    left: 1%;
+    transform: translateY(-50%); /* Adjust for vertical centering */
+    color: white;
+    display: flex;
+    align-items: center;
+    background-color: var(--primary-color1);
+    padding: 0.1vw;
+    border-radius: 1vw;
+}
+
+/* Time display styling */
+#location {
+    margin-left: 5px;
+    margin-right: 10px;
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+}
+
+/* Time display styling */
+#date {
+    margin-right: 10px;
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+}
+
+/* Time display styling */
+#time {
+    margin-right: 10px;
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+}
+
+/* Weather display styling */
+#weather {
+    margin-right: 5px;
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+}
+
+/* Weather icon styling */
+#weather-icon {
+    width: 25px;
+    height: auto;
+    margin-left: 5px;
+    display: inline-block;
+}
+
+.control-container {
+    background-color: var(--box-color);
+    padding: 1%;
+    border-radius: 5px;
+    color: var(--text-color);
+    margin-bottom: 1%;
+    width: 28vw;
+    height: 30vh; 
+
+    display: flex;
+    flex-direction: column; /* Stack children vertically */
+    align-items: center; /* Center children horizontally */
+    text-align: center; /* Center text for all text elements */
+}
+
+.control-container h2{
+    margin-top: 1vw; /* Remove the top margin to stick to the top */
+    margin-bottom: 0; /* Adjust space between title and the elements below */
+    height: 0px;
+    color: #333; /* Set the text color */
+    font-size: 1.5em; /* Set the font size */
+    text-align: center; /* Center the text horizontally */
+    font-weight: bold; /* Make the font bold */
+    font-family: 'Arial', sans-serif; /* Change the font family */
+}
+
+.button-container{
+    margin-top: auto;
+    margin-bottom: auto;
+    display: flex;
+    flex-direction: row;
+    justify-content: center; /* Center the flex items on the main axis */
+    align-items: center;
+}
+
+#button-container button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--menu-event-button-size);
+    height: var(--menu-event-button-size);
+    border-radius: 50%;
+    border: none;
+    background-color: transparent; /* Set background to transparent */
+    color: var(--button-color);
+    font-size: 5vw;
+    cursor: pointer;
+    padding: 0;
+
+    height: 15vw;
+}
+
+/* Toggled state styling for icon inside button */
+.button-toggled i {
+    color: var(--activate-color);
+}
+
+.control-container-slider {
+    background-color: var(--box-color);
+    padding: 1%;
+    border-radius: 5px;
+    color: var(--text-color);
+    margin-bottom: 1%;
+    width: 28vw;
+    height: 30vh; 
+
+    display: flex;
+    flex-direction: column; /* Stack children vertically */
+    align-items: center; /* Center children horizontally */
+    text-align: center; /* Center text for all text elements */
+}
+
+.control-container-slider h2{
+    margin-top: 1vw; /* Remove the top margin to stick to the top */
+    margin-bottom: 0; /* Adjust space between title and the elements below */
+
+    color: #333; /* Set the text color */
+    font-size: 1.5em; /* Set the font size */
+    text-align: center; /* Center the text horizontally */
+    font-weight: bold; /* Make the font bold */
+    font-family: 'Arial', sans-serif; /* Change the font family */
+}
+
+.roundslider-container {
+    display: flex;
+    flex-direction: row;
+    justify-content: center; /* Center the flex items on the main axis */
+    align-items: center;
+    height: 15vw;
+}
+
+.roundslider-container .rs-range-color  {
+    background-color: var(--slider-primary-color);
+}
+.roundslider-container .rs-path-color  {
+    background-color: var(--slider-secondary-color);
+}
+.roundslider-container .rs-handle  {
+    background-color: var(--slider-secondary-color);
+    padding: 7px;
+    border: 2px solid var(--slider-primary-color);
+}
+.roundslider-container .rs-handle.rs-focus  {
+    border-color: var(--slider-primary-color);
+}
+.roundslider-container .rs-handle:after  {
+    border-color: var(--slider-primary-color);
+    background-color: var(--slider-primary-color);
+}
+.roundslider-container .rs-border  {
+    border-color: transparent;
+}
+
+.roundslider-container button {
+    background-color: transparent;
+    width: 40px; /* Adjust the width of the buttons */
+    height: 40px; /* Adjust the height of the buttons */
+    cursor: pointer;
+    font-size: 1.5em; /* Adjust font size as needed */
+    color: #000; /* Set the color as needed */
+}
+
