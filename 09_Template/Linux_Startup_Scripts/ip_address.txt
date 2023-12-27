@@ -1,0 +1,7 @@
+raspberrypi online
+
+Ethernet IP address: 147.87.104.16 
+Local    IP address: 127.0.1.1
+
+Sat  7 Oct 14:33:14 BST 2023
+

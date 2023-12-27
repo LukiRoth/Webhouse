@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+	<title>TCP Term by Elham Firouzi</title>
+	<meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+	<script type="text/javascript">
+	<!--	
+		socket;
+
+		function openConnection() {
+			socket = new WebSocket ('ws://192.168.1.112:8000');
+
+			socket.onopen = function () {
+				alert("connection has been established");
+			}
+
+			socket.onerror = function () {
+				alert("connection has not been established");
+			}
+
+			socket.onclose = function () {
+				alert("connection has been closed");
+			}
+
+			socket.onmessage = function (message) {
+				var textField  = document.getElementById("ReceivedDataID");
+				textField.value = message.data;
+			}
+		}
+
+		function closeConnection () {
+			socket.close();
+			clearInterval(interval);
+		}
+
+		function send() {
+			var textField  = document.getElementById("DataToSendID");
+			socket.send(textField.value);
+		}
+	-->
+	</script>   
+</head>
+
+<body>
+	<table>
+		<tr>
+			<td>Data to send</td>
+			<td>Received data</td>
+		</tr>
+		<tr>
+			<td><textarea id="DataToSendID" cols="40" rows="10"></textarea></td>
+			<td><textarea id="ReceivedDataID" cols="40" rows="10"></textarea></td>
+		</tr>
+	</table>
+	<input type="button" value="connect"    onclick="openConnection()">
+	<input type="button" value="disconnect" onclick="closeConnection()">
+	<input type="button" value="send"       onclick="send()">
+</body>
+</html>

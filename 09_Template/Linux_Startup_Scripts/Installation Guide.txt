@@ -1,0 +1,12 @@
+Installation guide for the Linux startup script
+
+copy "rc.local" in /etc
+in rc.local comment "sudo bash /root/startTemplate.sh &"
+
+copy "emailNotify.sh" in /root
+
+copy "mailing.py" in /root
+in mailing.py replace "elham.firouzi@bfh.ch" with your email address
+
+copy "startTemplate.sh" in /root
+

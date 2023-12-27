@@ -122,8 +122,6 @@ $(document).ready(function() {
 });
 
 
-
-
 // Slider V2
 
 // Function to update the slider value
