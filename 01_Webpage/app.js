@@ -1,7 +1,42 @@
+// Define the WebSocket connection
+//TODO: Replace 192.168.1.100:8000 with the actual IP address and port number
+var webSocket = new WebSocket("ws://192.168.1.100:8000");
+
+// Connection opened
+webSocket.onopen = function(event) {
+    console.log("Connection opened", event);
+};
+
+// Connection error handling
+webSocket.onerror = function(error) {
+    console.log("WebSocket Error", error);
+};
+
+// Handling messages from the server
+webSocket.onmessage = function(message) {
+var received_msg = message.data;
+    console.log("Message received: ", received_msg);
+};
+
+// Function to send a command to the server
+function sendCommand(command) {
+webSocket.send(command);
+    console.log("Command sent: ", command);
+}
+
+// Example usage
+// This function can be called when a button is clicked in your HTML to toggle Lamp 1
+function toggleLamp1() {
+    sendCommand("<L1on>");
+}
+
+// ----------------------------------------------------------------------------------------------------------
+
 document.addEventListener('DOMContentLoaded', function() {
     // TV Toggle
     document.getElementById('tv-toggle').addEventListener('click', function() {
         // Implement TV toggle logic
+        //TODO: Implement TV toggle logic
         console.log("TV toggled");
     });
 
