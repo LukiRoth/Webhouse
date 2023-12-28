@@ -18,16 +18,21 @@ var received_msg = message.data;
     console.log("Message received: ", received_msg);
 };
 
-// Function to send a command to the server
-function sendCommand(command) {
-webSocket.send(command);
-    console.log("Command sent: ", command);
+// Function to send a JSON command to the server
+function sendCommand(commandObject) {
+    var commandJSON = JSON.stringify(commandObject);
+    webSocket.send(commandJSON);
+    console.log("Command sent: ", commandJSON);
 }
 
-// Example usage
-// This function can be called when a button is clicked in your HTML to toggle Lamp 1
+// Example usage for toggling Lamp 1
 function toggleLamp1() {
-    sendCommand("<L1on>");
+    var command = {
+        action: "toggleLamp",
+        lampId: 1,
+        status: "on" // or "off", depending on the current state
+    };
+    sendCommand(command);
 }
 
 // ----------------------------------------------------------------------------------------------------------
