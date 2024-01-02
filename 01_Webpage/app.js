@@ -35,6 +35,87 @@ function toggleLamp1() {
     sendCommand(command);
 }
 
+function getLampState(lampId) {
+    var command = {
+        action: "getLampState",
+        lampId: lampId
+    };
+    sendCommand(command);
+}
+
+function turnTVOn() {
+    var command = {
+        action: "turnTVOn"
+    };
+    sendCommand(command);
+}
+
+function turnTVOff() {
+    var command = {
+        action: "turnTVOff"
+    };
+    sendCommand(command);
+}
+
+function getTVState() {
+    var command = {
+        action: "getTVState"
+    };
+    sendCommand(command);
+}
+
+function dimRLamp(dutyCycle) {
+    var command = {
+        action: "dimRLamp",
+        dutyCycle: dutyCycle
+    };
+    sendCommand(command);
+}
+
+function dimSLamp(dutyCycle) {
+    var command = {
+        action: "dimSLamp",
+        dutyCycle: dutyCycle
+    };
+    sendCommand(command);
+}
+
+function turnHeatOn() {
+    var command = {
+        action: "turnHeatOn"
+    };
+    sendCommand(command);
+}
+
+function turnHeatOff() {
+    var command = {
+        action: "turnHeatOff"
+    };
+    sendCommand(command);
+}
+
+function getHeatState() {
+    var command = {
+        action: "getHeatState"
+    };
+    sendCommand(command);
+}
+
+function getTemperature() {
+    var command = {
+        action: "getTemp"
+    };
+    sendCommand(command);
+}
+
+function getAlarmState() {
+    var command = {
+        action: "getAlarmState"
+    };
+    sendCommand(command);
+}
+
+
 // ----------------------------------------------------------------------------------------------------------
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -52,10 +133,26 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Lamp 3 Toggle
-    document.getElementById('lamp3-toggle').addEventListener('click', function() {
+    /*document.getElementById('lamp3-toggle').addEventListener('click', function() {
         // Implement Lamp 3 toggle logic
         console.log("Lamp 3 toggled");
+    });*/
+
+    document.getElementById('lamp3-toggle').addEventListener('click', function() {
+        var lampButton = this;
+        var currentState = lampButton.getAttribute('data-state');
+    
+        if (currentState === 'on') {
+            sendCommand({ action: "toggleLamp", lampId: 3, status: "off" });
+            lampButton.setAttribute('data-state', 'off');
+            console.log("Lamp 3 is set to off");
+        } else {
+            sendCommand({ action: "toggleLamp", lampId: 3, status: "on" });
+            lampButton.setAttribute('data-state', 'on');
+            console.log("Lamp 3 is set to on");
+        }
     });
+    
     
     document.getElementById('menu-button').addEventListener('click', function() {
         var menu = document.getElementById('slide-menu');
