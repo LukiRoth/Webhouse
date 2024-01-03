@@ -55,8 +55,14 @@ typedef int int32_t;
 
 //----- Function prototypes ----------------------------------------------------
 static int InitSocket(void);
+static int HandleHandshake(int com_sock_id, char* rxBuf);
+static int CheckAndHandleCloseFrame(int com_sock_id, char* rxBuf, int rx_data_len);
+static void DecodeMessage(int com_sock_id, char* rxBuf, int rx_data_len);
 static void processCommand(char*, char*);
 static void shutdownHook (int32_t);
+
+
+
 
 //----- Global variables -------------------------------------------------------
 static volatile int eShutdown = FALSE;
@@ -78,7 +84,7 @@ int main(int argc, char **argv) {
 	int com_sock_id = -1;						// Socket ID for the communication
 	struct sockaddr_in client;					// Client address
 	int addrlen = sizeof (struct sockaddr_in);	// Length of the client address
-	int com_addrlen;							// Length of the communication address
+	int com_addrlen = sizeof(client);			// Length of the communication address
 	
 	// Register shutdown hook
 	signal(SIGINT, shutdownHook);
@@ -118,47 +124,21 @@ int main(int argc, char **argv) {
 		// If a new WebSocket message have been received
 		if (rx_data_len > 0) {
 			rxBuf[rx_data_len] = '\0';
+
 			// Is the message a handshake request
-			if (strncmp(rxBuf, "GET", 3) == 0) {
-				// Yes -> create the handshake response and send it back
-				char response[WS_HS_ACCLEN];
-				get_handshake_response(rxBuf, response);
-				send(com_sock_id, (void *)response, strlen(response), 0);
+			if(HandleHandshake(com_sock_id, rxBuf) == TRUE) {				
+				continue;
 			}
-			else {
-				/* No -> decode incoming message,
-				process the command and
-				send back an acknowledge message */
-				printf("Received: {%s}\n", rxBuf);
 
-
-				rxBuf[rx_data_len] = '\0';
-
-				// Check the opcode to determine the frame type
-				uint8_t opcode = rxBuf[0] & 0x0F;
-				if (opcode == 0x8) { // Close frame
-					// Handle close logic here
-					printf("Close frame received\n");
-					char closeFrame[2] = { 0x88, 0x00 }; // Simple close frame
-					send(com_sock_id, closeFrame, sizeof(closeFrame), 0);
-					close(com_sock_id);
-					com_sock_id = -1;
-				} else {
-					char command[rx_data_len];
-					//char response[RX_BUFFER_SIZE];
-					decode_incoming_request(rxBuf, command);
-					command[strlen(command)] = '\0';
-
-					printf("Command: {%s}\n", command);
-
-					//processCommand(command, response);
-					
-					char response[] = "<Command executed>";
-					char codedResponse[strlen(response)+2];
-					code_outgoing_response (response, codedResponse);
-					send(com_sock_id, (void *)codedResponse, strlen(codedResponse), 0);
-				}
+			// Is the message a close frame
+			if(!CheckAndHandleCloseFrame(com_sock_id, rxBuf, rx_data_len)) {
+				com_sock_id = -1;	 	// Update as the socket is closed
+				continue;
 			}
+
+			// Decode the message, execute the command and send the response
+			DecodeMessage(com_sock_id, rxBuf, rx_data_len);
+
 		}
 		else if (rx_data_len == 0) {
 			close(com_sock_id);
@@ -185,60 +165,131 @@ int main(int argc, char **argv) {
 
 	return EXIT_SUCCESS;
 }
+
 /*******************************************************************************
- *  function :    InitSocket
+ * @brief    Handles registered signals (SIGTERM, SIGINT) for graceful shutdown.
+ *
+ *           This function sets a flag to indicate that a shutdown signal has
+ *           been received, allowing the program to terminate gracefully.
+ *
+ * @param    sig   The incoming signal.
  ******************************************************************************/
-/** \brief        Creats server Socket
+static void shutdownHook(int32_t sig) {
+    printf("Signal %d received, initiating shutdown...\n", sig);
+    fflush(stdout);
+    eShutdown = TRUE;
+}
+
+/*******************************************************************************
+ * @brief    Creates and initializes a server socket with specified settings.
+ *           Binds the socket to the server address and listens for incoming
+ *           connections.
  *
- *  \type         static
- *
- *  \param[in]    none
- *
- *  \return       void
- *
+ * @return   The socket ID if successful, -1 on failure.
  ******************************************************************************/
- static int InitSocket(void) 
- {
-	// Create a socket
+static int InitSocket(void) 
+{
+    // Create a socket
     int server_sock_id = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (server_sock_id < 0) {
         perror("Socket creation failed");
-        return(-1);
+        return -1;
     }
+    printf("Socket created successfully. Server socket ID: %d\n", server_sock_id);
+    fflush(stdout);
 
-	printf("Socket created successfully. server sock id: %d \n", server_sock_id);
-	fflush(stdout);
-
-	// Set server address
-	struct sockaddr_in server;
+    // Set server address
+    struct sockaddr_in server;
     server.sin_family = AF_INET;
     server.sin_addr.s_addr = htonl(INADDR_ANY);
     server.sin_port = htons(SERVER_PORT);
-	
-	// Bind the socket
-	int bind_status = bind(server_sock_id, (struct sockaddr *)&server, sizeof(server));
+
+    // Bind the socket
+    int bind_status = bind(server_sock_id, (struct sockaddr *)&server, sizeof(server));
     if (bind_status < 0) {
         perror("Socket bind failed");
         close(server_sock_id);
-        return(-1);
+        return -1;
     }
+    printf("Socket binded successfully\n");
+    fflush(stdout);
 
-	printf("Socket binded successfully\n");
-	fflush(stdout);
-
-	// Listen on the socket
-	int listen_status = listen(server_sock_id, BACKLOG);
+    // Listen on the socket
+    int listen_status = listen(server_sock_id, BACKLOG);
     if (listen_status < 0) {
         perror("Listen failed");
         close(server_sock_id);
-        return(-1);
+        return -1;
     }
+    printf("Listen succeeded\n");
+    fflush(stdout);
 
-	printf("listen succeeded\n");
-	fflush(stdout);
+    return server_sock_id;
+}
+
+/*******************************************************************************
+ * @brief    Handles the WebSocket handshake if the incoming message is a GET request.
+ *           Creates and sends a handshake response back.
+ *
+ * @param    com_sock_id  Socket ID for communication.
+ * @param    rxBuf        Buffer containing the received message.
+ * @return   TRUE if a handshake was handled, FALSE otherwise.
+ ******************************************************************************/
+static int HandleHandshake(int com_sock_id, char* rxBuf)
+{
+	if (strncmp(rxBuf, "GET", 3) == 0) {
+		// create the handshake response and send it back
+		char response[WS_HS_ACCLEN];
+		get_handshake_response(rxBuf, response);
+		send(com_sock_id, (void *)response, strlen(response), 0);
+		return TRUE;
+	}
+
+	return FALSE;
+}
+
+/*******************************************************************************
+ * @brief    Checks if the received WebSocket message is a close frame.
+ *           Handles the close frame by sending a response and closing the socket.
+ *
+ * @param    com_sock_id  Socket ID for communication.
+ * @param    rxBuf        Buffer containing the received message.
+ * @param    rx_data_len  Length of the received message.
+ * @return   TRUE if not a close frame, FALSE if it is a close frame.
+ ******************************************************************************/
+static int CheckAndHandleCloseFrame(int com_sock_id, char* rxBuf, int rx_data_len) 
+{
+    uint8_t opcode = rxBuf[0] & 0x0F;
+    if (opcode == 0x8) { // Close frame detected
+        printf("Close frame received\n");
+        char closeFrame[2] = { 0x88, 0x00 }; // Simple close frame
+        send(com_sock_id, closeFrame, sizeof(closeFrame), 0);
+        close(com_sock_id);
+        return FALSE;
+    }
 	
-	return server_sock_id;
- }
+    return TRUE;
+}
+
+static void DecodeMessage(int com_sock_id, char* rxBuf, int rx_data_len)
+{
+	printf("[%d] Received: {%s}\n", __LINE__, rxBuf);
+
+	char command[rx_data_len];
+	//char response[RX_BUFFER_SIZE];
+	decode_incoming_request(rxBuf, command);
+	command[strlen(command)] = '\0';
+
+	printf("[%d] Command: {%s}\n", __LINE__, command);
+
+	//processCommand(command, response);
+	
+	char response[] = "<Command executed>";
+	char codedResponse[strlen(response)+2];
+	code_outgoing_response (response, codedResponse);
+	send(com_sock_id, (void *)codedResponse, strlen(codedResponse), 0);
+}
+
  /*******************************************************************************
  *  function :    processCommand
  ******************************************************************************/
@@ -324,27 +375,10 @@ int main(int argc, char **argv) {
 	//Prepare Response with temperature and alarm state
 	temp_cur = temp_cur*10;
 	int temp_int = temp_cur;
-	sprintf(TEMP, "%d", temp_int);
+	//sprintf(TEMP, "%d", temp_int);
 	
 	char ALARM[1];
-	sprintf(ALARM, "%d", getAlarmState());
+	//sprintf(ALARM, "%d", getAlarmState());
 	strcat(TEMP,ALARM);
 	strcpy(response, TEMP);
  }
-/*******************************************************************************
- *  function :    shutdownHook
- ******************************************************************************/
-/** \brief        Handle the registered signals (SIGTERM, SIGINT)
- *
- *  \type         static
- *
- *  \param[in]    sig    incoming signal
- *
- *  \return       void
- *
- ******************************************************************************/
-static void shutdownHook(int32_t sig) {
-    printf("Ctrl-C pressed....shutdown hook in main\n");
-    fflush(stdout);
-    eShutdown = TRUE;
-}
