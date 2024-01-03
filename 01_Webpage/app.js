@@ -66,47 +66,70 @@ function setSliderValue(utility, value) {
 // ----------------------------------------------------------------------------------------------------------
 
 document.addEventListener('DOMContentLoaded', function() {
+    // TV Toggle
     document.getElementById('tv-toggle').addEventListener('click', toggleTV);
-    document.getElementById('heater-toggle').addEventListener('click', toggleHeater);
+
+    // Heater heater-slider
+    document.getElementById('heater-slider').addEventListener('input', function() {
+        setSliderValue("heater", this.value);
+    });
+
+    // Alarm Toggle
     document.getElementById('alarm-toggle').addEventListener('click', toggleAlarm);
 
-    // Assuming you have a slider for Lamp 1 with an id 'lamp1-slider'
-    document.getElementById('lamp1-slider').addEventListener('input', function() {
-        setLamp1Brightness(this.value);
+    // Lamp1 Slider
+    document.getElementById('lamp-slider').addEventListener('input', function() {
+        setSliderValue("lamp1", this.value);
     });
 
+    // Lamp2 Toggle
     document.getElementById('lamp2-toggle').addEventListener('click', toggleLamp2);
+
+    // Lamp3 Toggle
     document.getElementById('lamp3-toggle').addEventListener('click', toggleLamp3);
 
-    
-    
-    document.getElementById('menu-button').addEventListener('click', function() {
-        var menu = document.getElementById('slide-menu');
-        var menuButton = document.getElementById('menu-button');
-        if (menu.style.right === '0px') {
-            menu.style.right = '-250px'; // Hide menu
-            menuButton.style.right = '1%'; // Reset button position
-        } else {
-            menu.style.right = '0px'; // Show menu
-            menuButton.style.right = 'calc(1% + var(--menu-width))'; // Move button with menu
-        }
+    // Heater and Lamp Sliders
+    $("#heater-plus-btn").click(function() {
+        updateAndSendSliderValue("#heater-slider", 1, "heater");
+    });
+    $("#heater-minus-btn").click(function() {
+        updateAndSendSliderValue("#heater-slider", -1, "heater");
+    });
+    $("#lamp-plus-btn").click(function() {
+        updateAndSendSliderValue("#lamp-slider", 1, "lamp1");
+    });
+    $("#lamp-minus-btn").click(function() {
+        updateAndSendSliderValue("#lamp-slider", -1, "lamp1");
     });
 
-    document.addEventListener('DOMContentLoaded', function() {
-        var menuButton = document.getElementById('menu-button');
-        var closeButton = document.getElementById('close-menu');
-        var menu = document.getElementById('slide-menu');
-    
-        menuButton.addEventListener('click', function() {
-            menu.style.right = '0px'; // Show menu
-            menuButton.style.display = 'none'; // Hide menu button
-        });
-    });
-
+    // Menu Button Click
     document.getElementById('menu-button').addEventListener('click', function() {
         var menu = document.getElementById('slide-menu');
         menu.classList.toggle('menuActive');
     });
+    
+    // document.getElementById('menu-button').addEventListener('click', function() {
+    //     var menu = document.getElementById('slide-menu');
+    //     var menuButton = document.getElementById('menu-button');
+    //     if (menu.style.right === '0px') {
+    //         menu.style.right = '-250px'; // Hide menu
+    //         menuButton.style.right = '1%'; // Reset button position
+    //     } else {
+    //         menu.style.right = '0px'; // Show menu
+    //         menuButton.style.right = 'calc(1% + var(--menu-width))'; // Move button with menu
+    //     }
+    // });
+
+    // document.addEventListener('DOMContentLoaded', function() {
+    //     var menuButton = document.getElementById('menu-button');
+    //     var closeButton = document.getElementById('close-menu');
+    //     var menu = document.getElementById('slide-menu');
+    
+    //     menuButton.addEventListener('click', function() {
+    //         menu.style.right = '0px'; // Show menu
+    //         menuButton.style.display = 'none'; // Hide menu button
+    //     });
+    // });
 
     // SUN Button clicked
     document.getElementById('sun-btn').addEventListener('click', function() {
@@ -137,6 +160,15 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('auto-btn').addEventListener('click', function() {
         console.log("AUTO button clicked");
     });
+
+    // Weather and Time Update
+    updateTime();
+    updateDate();
+    updateWeather();
+
+    // Adjust Slider Size
+    adjustSliderSize();
+    $(window).resize(adjustSliderSize);
 });
 
 function updateTime() {
