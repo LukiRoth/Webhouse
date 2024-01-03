@@ -1,6 +1,6 @@
 // Define the WebSocket connection
 //TODO: Replace 192.168.1.100:8000 with the actual IP address and port number
-var webSocket = new WebSocket("ws://192.168.1.100:8000");
+var webSocket = new WebSocket("ws://172.20.10.2:8000");
 
 // Connection opened
 webSocket.onopen = function(event) {

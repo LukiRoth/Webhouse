@@ -80,6 +80,7 @@
 
 //----- Function prototypes ----------------------------------------------------
 static void * threadTemp(void *pdata);
+
 #ifndef PWM
 static void * threadDimRLamp(void *pdata);
 static void * threadDimSLamp(void *pdata);
@@ -89,6 +90,7 @@ static void * threadDimSLamp(void *pdata);
 static pthread_t pThreadTemp;
 static int stateHeiz = HEIZ_OFF;
 static float localTemp = 16.0;
+
 #ifndef PWM
 static pthread_t pThreadDimRLamp;
 static pthread_t pThreadDimSLamp;
