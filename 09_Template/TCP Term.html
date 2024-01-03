@@ -9,7 +9,8 @@
 		socket;
 
 		function openConnection() {
-			socket = new WebSocket ('ws://192.168.1.101:8000');
+			//socket = new WebSocket ('ws://192.168.1.101:8000');
+			socket = new WebSocket ('ws://192.168.1.139:8000');
 
 			socket.onopen = function () {
 				alert("connection has been established");
