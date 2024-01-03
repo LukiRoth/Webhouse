@@ -1,6 +1,6 @@
 // Define the WebSocket connection
 //TODO: Replace 192.168.1.100:8000 with the actual IP address and port number
-var webSocket = new WebSocket("ws://172.20.10.2:8000");
+var webSocket = new WebSocket("ws://192.168.1.139:8000");
 
 // Connection opened
 webSocket.onopen = function(event) {
@@ -25,133 +25,59 @@ function sendCommand(commandObject) {
     console.log("Command sent: ", commandJSON);
 }
 
-// Example usage for toggling Lamp 1
-function toggleLamp1() {
-    var command = {
-        action: "toggleLamp",
-        lampId: 1,
-        status: "on" // or "off", depending on the current state
-    };
-    sendCommand(command);
+// 
+function readAllData() {
+    sendCommand({ action: "read", utility: "all" });
 }
 
-function getLampState(lampId) {
-    var command = {
-        action: "getLampState",
-        lampId: lampId
-    };
-    sendCommand(command);
+function readUtilityData(utility) {
+    sendCommand({ action: "read", utility: utility });
 }
 
-function turnTVOn() {
-    var command = {
-        action: "turnTVOn"
-    };
-    sendCommand(command);
+function setUtilityStatus(utility, status) {
+    sendCommand({ action: "set", utility: utility, status: status });
 }
 
-function turnTVOff() {
-    var command = {
-        action: "turnTVOff"
-    };
-    sendCommand(command);
+function toggleTV() {
+    sendCommand({ action: "toggle", utility: "tv" });
+    console.log("TV toggled");
 }
 
-function getTVState() {
-    var command = {
-        action: "getTVState"
-    };
-    sendCommand(command);
+function toggleAlarm() {
+    sendCommand({ action: "toggle", utility: "alarm" });
+    console.log("Alarm toggled");
 }
 
-function dimRLamp(dutyCycle) {
-    var command = {
-        action: "dimRLamp",
-        dutyCycle: dutyCycle
-    };
-    sendCommand(command);
+function toggleLamp2() {
+    sendCommand({ action: "toggle", utility: "lamp2" });
+    console.log("Lamp 2 toggled");
 }
 
-function dimSLamp(dutyCycle) {
-    var command = {
-        action: "dimSLamp",
-        dutyCycle: dutyCycle
-    };
-    sendCommand(command);
+function toggleLamp3() {
+    sendCommand({ action: "toggle", utility: "lamp3" });
+    console.log("Lamp 3 toggled");
 }
 
-function turnHeatOn() {
-    var command = {
-        action: "turnHeatOn"
-    };
-    sendCommand(command);
+function setSliderValue(utility, value) {
+    sendCommand({ action: "set", utility: utility, value: value });
+    console.log(`${utility} set to`, value);
 }
-
-function turnHeatOff() {
-    var command = {
-        action: "turnHeatOff"
-    };
-    sendCommand(command);
-}
-
-function getHeatState() {
-    var command = {
-        action: "getHeatState"
-    };
-    sendCommand(command);
-}
-
-function getTemperature() {
-    var command = {
-        action: "getTemp"
-    };
-    sendCommand(command);
-}
-
-function getAlarmState() {
-    var command = {
-        action: "getAlarmState"
-    };
-    sendCommand(command);
-}
-
 
 // ----------------------------------------------------------------------------------------------------------
 
 document.addEventListener('DOMContentLoaded', function() {
-    // TV Toggle
-    document.getElementById('tv-toggle').addEventListener('click', function() {
-        // Implement TV toggle logic
-        //TODO: Implement TV toggle logic
-        console.log("TV toggled");
+    document.getElementById('tv-toggle').addEventListener('click', toggleTV);
+    document.getElementById('heater-toggle').addEventListener('click', toggleHeater);
+    document.getElementById('alarm-toggle').addEventListener('click', toggleAlarm);
+
+    // Assuming you have a slider for Lamp 1 with an id 'lamp1-slider'
+    document.getElementById('lamp1-slider').addEventListener('input', function() {
+        setLamp1Brightness(this.value);
     });
 
-    // Lamp 2 Toggle
-    document.getElementById('lamp2-toggle').addEventListener('click', function() {
-        // Implement Lamp 2 toggle logic
-        console.log("Lamp 2 toggled");
-    });
+    document.getElementById('lamp2-toggle').addEventListener('click', toggleLamp2);
+    document.getElementById('lamp3-toggle').addEventListener('click', toggleLamp3);
 
-    // Lamp 3 Toggle
-    /*document.getElementById('lamp3-toggle').addEventListener('click', function() {
-        // Implement Lamp 3 toggle logic
-        console.log("Lamp 3 toggled");
-    });*/
-
-    document.getElementById('lamp3-toggle').addEventListener('click', function() {
-        var lampButton = this;
-        var currentState = lampButton.getAttribute('data-state');
-    
-        if (currentState === 'on') {
-            sendCommand({ action: "toggleLamp", lampId: 3, status: "off" });
-            lampButton.setAttribute('data-state', 'off');
-            console.log("Lamp 3 is set to off");
-        } else {
-            sendCommand({ action: "toggleLamp", lampId: 3, status: "on" });
-            lampButton.setAttribute('data-state', 'on');
-            console.log("Lamp 3 is set to on");
-        }
-    });
     
     
     document.getElementById('menu-button').addEventListener('click', function() {
@@ -258,41 +184,38 @@ $(document).ready(function() {
     });
 });
 
-
 // Slider V2
 
 // Function to update the slider value
-function updateSliderValue(change) {
-    var slider = $(".roundslider");
-    var currentValue = slider.roundSlider("getValue");
+function updateAndSendSliderValue(sliderId, change, utility) {
+    var currentValue = $(sliderId).roundSlider("getValue");
     var newValue = currentValue + change;
-    slider.roundSlider("setValue", newValue);
+    $(sliderId).roundSlider("setValue", newValue);
+    setSliderValue(utility, newValue);
 }
 
 $(document).ready(function() {
-    // Function to update the slider value
-    function updateSliderValue(sliderId, change) {
-        var currentValue = $(sliderId).roundSlider("getValue");
-        $(sliderId).roundSlider("setValue", currentValue + change);
-    }
+    // Event listener for increasing the heater slider value
+    $("#heater-plus-btn").click(function() {
+        updateAndSendSliderValue("#heater-slider", 1, "heater");
+    });
+
+    // Event listener for decreasing the heater slider value
+    $("#heater-minus-btn").click(function() {
+        updateAndSendSliderValue("#heater-slider", -1, "heater");
+    });
 
     // Event listener for increasing the lamp slider value
     $("#lamp-plus-btn").click(function() {
-        updateSliderValue("#lamp-slider", 1);
+        updateAndSendSliderValue("#lamp-slider", 1, "lamp1");
     });
 
     // Event listener for decreasing the lamp slider value
     $("#lamp-minus-btn").click(function() {
-        updateSliderValue("#lamp-slider", -1);
-    });
-
-    $("#heater-plus-btn").click(function() {
-        updateSliderValue("#heater-slider", 1);
-    });
-    $("#heater-minus-btn").click(function() {
-        updateSliderValue("#heater-slider", -1);
+        updateAndSendSliderValue("#lamp-slider", -1, "lamp1");
     });
 });
+
 
 
 function adjustSliderSize() {

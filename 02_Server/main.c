@@ -273,17 +273,14 @@ static int CheckAndHandleCloseFrame(int com_sock_id, char* rxBuf, int rx_data_le
 
 static void DecodeMessage(int com_sock_id, char* rxBuf, int rx_data_len)
 {
-	printf("[%d] Received: {%s}\n", __LINE__, rxBuf);
-
 	char command[rx_data_len];
-	//char response[RX_BUFFER_SIZE];
 	decode_incoming_request(rxBuf, command);
 	command[strlen(command)] = '\0';
-
 	printf("[%d] Command: {%s}\n", __LINE__, command);
 
-	//processCommand(command, response);
 	
+	//char response[RX_BUFFER_SIZE];
+	//processCommand(command, response);
 	char response[] = "<Command executed>";
 	char codedResponse[strlen(response)+2];
 	code_outgoing_response (response, codedResponse);
