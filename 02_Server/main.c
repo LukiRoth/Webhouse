@@ -271,111 +271,110 @@ static int CheckAndHandleCloseFrame(int com_sock_id, char* rxBuf, int rx_data_le
     return TRUE;
 }
 
+/*******************************************************************************
+ * @brief    Decodes the received WebSocket message and executes the command.
+ *           Sends the response back to the client.
+ *
+ * @param    com_sock_id  Socket ID for communication.
+ * @param    rxBuf        Buffer containing the received message.
+ * @param    rx_data_len  Length of the received message.
+ * @return   void
+ ******************************************************************************/
 static void DecodeMessage(int com_sock_id, char* rxBuf, int rx_data_len)
 {
 	char command[rx_data_len];
 	decode_incoming_request(rxBuf, command);
 	command[strlen(command)] = '\0';
 	printf("[%d] Command: {%s}\n", __LINE__, command);
-
 	
-	//char response[RX_BUFFER_SIZE];
-	//processCommand(command, response);
-	char response[] = "<Command executed>";
+	char response[RX_BUFFER_SIZE];
+	processCommand(command, response);
+
+	//char response[] = "<Command executed>";
 	char codedResponse[strlen(response)+2];
 	code_outgoing_response (response, codedResponse);
 	send(com_sock_id, (void *)codedResponse, strlen(codedResponse), 0);
 }
 
- /*******************************************************************************
- *  function :    processCommand
- ******************************************************************************/
-/** \brief        Processes the command recieved from the client.
- *
- *  \type         static
- *
- *  \param[in]    command command recieved
- *
- *  \return       void
- *
- ******************************************************************************/
- static void processCommand(char* command, char* response) {
+static void processCommand(char* command, char* response) 
+{
+    json_error_t error;
+    json_t *root = json_loads(command, 0, &error);
 
-	//Divide commands into single commands
-	char L1 = command[0];
-	char DIMS[4] = {command[1],command[2],command[3], '\0'};
-	char L2 = command[4];
-	char DIMR[4] = {command[5],command[6],command[7], '\0'};
-	char TV = command[8];
-	char HEAT = command[9];
-	char TEMP[4] = {command[10],command[11],command[12], '\0'};
-	
-	//Adjust the housing according to commands
-	if (L1 == '1') {
-		turnLED1On();
-		printf("L1on");
-		fflush(stdout);
-	}
-	else {
-		turnLED1Off();
-		printf("L1off");
-		fflush(stdout);
-	}
-	int dim = atoi(DIMS);
-	dimSLamp(dim);
-	if (L2 == '1') {
-		turnLED2On();
-		printf("L2on");
-		fflush(stdout);
-	}
-	else {
-		turnLED2Off();
-		printf("L2off");
-		fflush(stdout);
-	}
-	dim = atoi(DIMR);
-	dimRLamp(dim);
-	if (TV == '1') {
-		turnTVOn();
-		printf("TVon");
-		fflush(stdout);
-	}
-	else {
-		turnTVOff();
-		printf("TVoff");
-		fflush(stdout);
-	}
-	if (HEAT == '1') {
-		turnHeatOn();
-		printf("Heaton");
-		fflush(stdout);
-	}
-	else {
-		turnHeatOff();
-		printf("Heatoff");
-		fflush(stdout);
-	}
-	
-	float temp_req = atof(TEMP)/10;
-	float temp_cur = getTemp();
-	if (temp_cur < temp_req) {
-		turnHeatOn();
-		printf("Heaton");
-		fflush(stdout);
-	}
-	else if (temp_cur > temp_req) {
-		turnHeatOff();	
-		printf("Heatoff");
-		fflush(stdout);
-	}
-	
-	//Prepare Response with temperature and alarm state
-	temp_cur = temp_cur*10;
-	int temp_int = temp_cur;
-	//sprintf(TEMP, "%d", temp_int);
-	
-	char ALARM[1];
-	//sprintf(ALARM, "%d", getAlarmState());
-	strcat(TEMP,ALARM);
-	strcpy(response, TEMP);
- }
+    if (!root) {
+        fprintf(stderr, "error: on line %d: %s\n", error.line, error.text);
+        sprintf(response, "{\"type\":\"Error\",\"message\":\"Invalid JSON\"}");
+        return;
+    }
+
+    json_t *action = json_object_get(root, "action");
+    json_t *utility = json_object_get(root, "utility");
+
+    if (json_is_string(action) && json_is_string(utility)) {
+        const char *action_str = json_string_value(action);
+        const char *utility_str = json_string_value(utility);
+
+        if (strcmp(action_str, "read") == 0 && strcmp(utility_str, "all") == 0) {
+            // Gather data from each utility
+            int tvState = getTVState();
+            int led1State = getLED1State();
+            int led2State = getLED2State();
+            int heatState = getHeatState();
+            float temperature = getTemp();
+            int alarmState = getAlarmState();
+            
+            // Construct a JSON response
+			json_t *res = json_pack("{s:s, s:i, s:i, s:i, s:i, s:f, s:i}", 
+									"type", "UtilityData",
+									"tvState", tvState, 
+									"led1State", led1State, 
+									"led2State", led2State, 
+									"heatState", heatState, 
+									"temperature", temperature, 
+									"alarmState", alarmState);
+
+            if (res) {
+                char *res_str = json_dumps(res, JSON_COMPACT);
+                if (res_str) {
+                    strncpy(response, res_str, RX_BUFFER_SIZE);
+                    free(res_str);
+                } else {
+                    sprintf(response, "{\"error\":\"JSON dump failed\"}");
+                }
+                json_decref(res);
+            } else {
+                sprintf(response, "{\"error\":\"JSON pack failed\"}");
+            }
+        } else if (strcmp(action_str, "toggle") == 0) {
+            if (strcmp(utility_str, "tv") == 0) {
+                getTVState() ? turnTVOff() : turnTVOn();
+            } else if (strcmp(utility_str, "alarm") == 0) {
+                // TODO: Implement alarm toggle logic
+            } else if (strcmp(utility_str, "lamp2") == 0) {
+                getLED2State() ? turnLED2Off() : turnLED2On();
+            } else if (strcmp(utility_str, "lamp3") == 0) {
+                // TODO: Implement lamp3 toggle logic
+            }
+            sprintf(response, "{\"type\":\"Success\",\"message\":\"Utility toggled\"}");
+        } else if (strcmp(action_str, "set") == 0) {
+            json_t *value = json_object_get(root, "value");
+            if (!json_is_integer(value)) {
+                sprintf(response, "{\"type\":\"Error\",\"message\":\"Invalid value\"}");
+            } else {
+                int val = (int)json_integer_value(value);
+                if (strcmp(utility_str, "heater") == 0) {
+                    // TODO: Implement heater set logic
+                } else if (strcmp(utility_str, "lamp1") == 0) {
+                    dimSLamp((uint16_t)val);
+                }
+                sprintf(response, "{\"type\":\"Success\",\"message\":\"Value set\"}");
+            }
+        } else {
+            sprintf(response, "{\"type\":\"Error\",\"message\":\"Invalid command\"}");
+        }
+    } else {
+        sprintf(response, "{\"type\":\"Error\",\"message\":\"Missing or invalid fields\"}");
+    }
+
+    json_decref(root);
+}
