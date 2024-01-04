@@ -1,7 +1,6 @@
 /* Root variables for easy theme management */
 :root {
     /* Color variables */
-
     --primary-color: #0f4c75;
     --primary-color1: #3282b8;
     --secondary-color: #2a9d8f;
@@ -33,13 +32,13 @@ html, body {
     padding: 0;
     height: 100vh;
     width: 100vw;
-    overflow: hidden; /* Prevents scrolling */
+    overflow: hidden;
 }
 
 /* Body layout */
 body {
     display: flex;
-    flex-direction: column; /* Vertical stacking */
+    flex-direction: column;
 }
 
 /* Header styling */
@@ -47,31 +46,12 @@ header {
     position: relative;
     background-color: var(--primary-color);
     color: #e7ecef;
-    display: flex; /* Use flexbox for layout */
-    justify-content: center; /* Center content horizontally */
-    align-items: center; /* Center content vertically */
-    text-align: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
     padding: 0.1vh;
-    font-weight: bold; /* Make the font bold */
-    font-family: 'Arial', sans-serif; /* Change the font family */
-}
-
-/* Main content layout */
-.main-content {
-    flex-grow: 1; /* Occupies available space */
-    display: flex;
-    justify-content: center; /* Horizontally center content */
-    align-items: center; /* Vertically center content */
-}
-
-/* Container for central elements */
-.container {
-    width: 100vw; /* Relative width */
-    height: 100vh; /* Relative height */
-    display: flex;
-    flex-direction: column; /* Vertical stacking */
-    justify-content: center; /* Vertical centering */
-    align-items: center; /* Horizontal centering */
+    font-weight: bold;
+    font-family: 'Arial', sans-serif;
 }
 
 /* Grid layout for main content */
@@ -80,10 +60,19 @@ main {
     grid-template-columns: repeat(3, 1fr);
     grid-gap: 3%;
     padding: 1%;
-    justify-content: center; /* Center items horizontally */
-    align-items: center; /* Center items vertically */
+    justify-content: center;
+    align-items: center;
 }
 
+/* Main content layout */
+.main-content {
+    flex-grow: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Section styling */
 section {
     padding: 5em 1em;
     display: flex;
@@ -91,158 +80,12 @@ section {
     align-items: center;
 }
 
+/* Styling for divs inside sections */
 section > div {
     margin: 0.5em;
 }
 
-/* Styling for control boxes */
-.control-box {
-    background-color: var(--box-color);
-    padding: 1%;
-    border-radius: 5px;
-    color: var(--text-color);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 1%;
-    width: 28vw;
-    height: 30vh; 
-}
-
-/* Styling for control box headers */
-.control-box h2 {
-    font-size: 1.2rem;
-    margin-bottom: 1rem;
-    color: var(--text-color);
-}
-
-/* Button and alarm indicator styling */
-button, .alarm-indicator {
-    padding: var(--small-padding) var(--base-padding);
-    font-size: 1rem;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    background-color: var(--button-color);
-    color: white;
-    text-align: center;
-}
-
-/* Animation for active alarm indicators */
-.alarm-indicator.active {
-    animation: blinker 1s linear infinite;
-}
-
-/* Blinker animation keyframes */
-@keyframes blinker {
-    50% {
-        opacity: 0;
-    }
-}
-
-/* Footer styling */
-footer {
-    text-align: center;
-    padding: 0.1vh;
-    background-color: var(--footer-background-color);
-    color: white;
-    text-align: center; /* Center the text horizontally */
-    font-family: 'Arial', sans-serif; /* Change the font family */
-}
-
-/* Slide-in menu styling */
-#slide-menu {
-    position: fixed;
-    top: 0;
-    right: calc(-1 * var(--menu-width)); /* Initially hidden */
-    width: var(--menu-width);
-    height: 100vh;
-    background-color: var(--menu-background-color);
-    box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
-    z-index: 99;
-    transition: right 0.5s; /* Animation for sliding effect */
-}
-
-/* Menu button styling */
-#menu-button {
-    position: absolute;
-    top: 50%;
-    right: 1%;
-    transform: translateY(-50%);
-    color: white;
-    z-index: 100;
-    transition: right 0.5s;
-
-    /* Set width and height for a square button */
-    width: 5vh; /* Adjust as needed */
-    height: 5vh; /* Height is the same as width to form a square */
-    
-    /* Adjust font size and padding */
-    font-size: 3vh; /* Smaller font size */
-    padding: 0; /* Remove padding */
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-sizing: border-box; /* Include padding and borders in the element's total width and height */
-}
-
-/* Adjusts menu button when menu is active */
-.menuActive #menu-button {
-    right: calc(1% + var(--menu-width));
-}
-
-/* Slide menu list styling */
-#slide-menu ul {
-    list-style-type: none;
-    padding: 0;
-    margin: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-}
-
-/* Slide menu list item styling */
-#slide-menu ul li {
-    width: 100%; /* Full width of the parent */
-    display: flex;
-    justify-content: center; /* Center horizontally */
-    align-items: center; /* Center vertically */
-    margin-bottom: var(--button-margin); /* Consistent spacing */
-}
-
-/* Slide menu link styling */
-#slide-menu ul li a {
-    display: block;
-    padding: 10px;
-    text-decoration: none;
-    color: black;
-    width: 100%; /* Full width for alignment */
-    text-align: center; /* Center the text */
-}
-
-/* Slide menu button styling */
-#slide-menu ul li button {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: var(--menu-event-button-size);
-    height: var(--menu-event-button-size);
-    border-radius: 50%;
-    border: none;
-    background-color: var(--button-color); 
-    color: var(--background-color);
-    font-size: var(--menu-event-button-icon);
-    cursor: pointer;
-    padding: 0;
-    margin-top: 15px;
-}
-
-/* Hover effect for menu buttons */
-#slide-menu ul li button:hover {
-    background-color: var(--hover-color);
-}
+/* ------------------- Header Content Styling ----------------------------------
 
 /* Time and weather display styling */
 #time-and-weather {
@@ -299,6 +142,154 @@ footer {
     display: inline-block;
 }
 
+#connection {
+    position: absolute;
+    top: 50%;
+    margin-left: 40%;
+    transform: translateY(-50%);
+    color: white;
+    display: flex;
+    align-items: center;
+    background-color: var(--primary-color1);
+    padding: 0.5vw;
+    border-radius: 1vw;
+}
+
+/* Slide-in menu styling */
+#slide-menu {
+    position: fixed;
+    top: 0;
+    right: calc(-1 * var(--menu-width));
+    width: var(--menu-width);
+    height: 100vh;
+    background-color: var(--menu-background-color);
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+    z-index: 99;
+    transition: right 0.5s;
+}
+
+/* Menu button styling */
+#menu-button {
+    position: absolute;
+    top: 50%;
+    right: 1%;
+    transform: translateY(-50%);
+    color: white;
+    z-index: 100;
+    transition: right 0.5s;
+    width: 5vh;
+    height: 5vh;
+    font-size: 3vh;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+}
+
+/* Adjusts menu button when menu is active */
+.menuActive #menu-button {
+    right: calc(1% + var(--menu-width));
+}
+
+/* Slide menu list styling */
+#slide-menu ul {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+/* Slide menu list item styling */
+#slide-menu ul li {
+    width: 100%; 
+    display: flex;
+    justify-content: center; 
+    align-items: center; 
+    margin-bottom: var(--button-margin); 
+}
+
+/* Slide menu link styling */
+#slide-menu ul li a {
+    display: block;
+    padding: 10px;
+    text-decoration: none;
+    color: black;
+    width: 100%; 
+    text-align: center; 
+}
+
+/* Slide menu button styling */
+#slide-menu ul li button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--menu-event-button-size);
+    height: var(--menu-event-button-size);
+    border-radius: 50%;
+    border: none;
+    background-color: var(--button-color); 
+    color: var(--background-color);
+    font-size: var(--menu-event-button-icon);
+    cursor: pointer;
+    padding: 0;
+    margin-top: 15px;
+}
+
+/* Hover effect for menu buttons */
+#slide-menu ul li button:hover {
+    background-color: var(--hover-color);
+}
+
+/* ------------------- Body Content Styling ----------------------------------
+
+/* Container for central elements */
+.container {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Styling for control boxes */
+.control-box {
+    background-color: var(--box-color);
+    padding: 1%;
+    border-radius: 5px;
+    color: var(--text-color);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1%;
+    width: 28vw;
+    height: 30vh; 
+}
+
+/* Styling for control box headers */
+.control-box h2 {
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+    color: var(--text-color);
+}
+
+/* Button and alarm indicator styling */
+button, .alarm-indicator {
+    padding: var(--small-padding) var(--base-padding);
+    font-size: 1rem;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    background-color: var(--button-color);
+    color: white;
+    text-align: center;
+}
+
+/* Styling for control containers */
 .control-container {
     background-color: var(--box-color);
     padding: 1%;
@@ -306,34 +297,36 @@ footer {
     color: var(--text-color);
     margin-bottom: 1%;
     width: 28vw;
-    height: 30vh; 
-
+    height: 30vh;
     display: flex;
-    flex-direction: column; /* Stack children vertically */
-    align-items: center; /* Center children horizontally */
-    text-align: center; /* Center text for all text elements */
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
 }
 
-.control-container h2{
-    margin-top: 1vw; /* Remove the top margin to stick to the top */
-    margin-bottom: 0; /* Adjust space between title and the elements below */
+/* Header style for control containers */
+.control-container h2 {
+    margin-top: 1vw;
+    margin-bottom: 0;
     height: 0px;
-    color: #333; /* Set the text color */
-    font-size: 1.5em; /* Set the font size */
-    text-align: center; /* Center the text horizontally */
-    font-weight: bold; /* Make the font bold */
-    font-family: 'Arial', sans-serif; /* Change the font family */
+    color: #333;
+    font-size: 1.5em;
+    text-align: center;
+    font-weight: bold;
+    font-family: 'Arial', sans-serif;
 }
 
-.button-container{
+/* Container for buttons */
+.button-container {
     margin-top: auto;
     margin-bottom: auto;
     display: flex;
     flex-direction: row;
-    justify-content: center; /* Center the flex items on the main axis */
+    justify-content: center;
     align-items: center;
 }
 
+/* Styling for buttons within the button container */
 #button-container button {
     display: flex;
     align-items: center;
@@ -342,20 +335,64 @@ footer {
     height: var(--menu-event-button-size);
     border-radius: 50%;
     border: none;
-    background-color: transparent; /* Set background to transparent */
+    background-color: transparent;
     color: var(--button-color);
     font-size: 5vw;
     cursor: pointer;
     padding: 0;
-
     height: 15vw;
 }
 
-/* Toggled state styling for icon inside button */
+/* Styling for the alarm icon within the button container */
+#button-container #alarm-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--menu-event-button-size);
+    height: var(--menu-event-button-size);
+    border-radius: 50%;
+    border: none;
+    background-color: transparent;
+    color: var(--button-color);
+    font-size: 5vw;
+    cursor: pointer;
+    padding: 0;
+    height: 15vw;
+}
+
+#temp-status {
+    position: absolute;
+    margin-top: 0;
+    margin-bottom: -10vw;
+    height: 0px;
+    color: #333;
+    font-size: 1em;
+    text-align: center;
+    font-weight: bold;
+    font-family: 'Arial', sans-serif;
+}
+
+/* Keyframes for blinking alarm icon effect */
+@keyframes blinkingEffect {
+    0% { color: yellow; }
+    50% { color: transparent; }
+    100% { color: yellow; }
+}
+
+/* Styling for active alarm icon */
+#alarm-icon.on {
+    animation-name: blinkingEffect;
+    animation-duration: 1s;
+    animation-iteration-count: infinite;
+    cursor: default;
+}
+
+/* Styling for toggled state of icon inside button */
 .button-toggled i {
     color: var(--activate-color);
 }
 
+/* Styling for control containers with sliders */
 .control-container-slider {
     background-color: var(--box-color);
     padding: 1%;
@@ -363,61 +400,82 @@ footer {
     color: var(--text-color);
     margin-bottom: 1%;
     width: 28vw;
-    height: 30vh; 
-
+    height: 30vh;
     display: flex;
-    flex-direction: column; /* Stack children vertically */
-    align-items: center; /* Center children horizontally */
-    text-align: center; /* Center text for all text elements */
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
 }
 
-.control-container-slider h2{
-    margin-top: 1vw; /* Remove the top margin to stick to the top */
-    margin-bottom: 0; /* Adjust space between title and the elements below */
-
-    color: #333; /* Set the text color */
-    font-size: 1.5em; /* Set the font size */
-    text-align: center; /* Center the text horizontally */
-    font-weight: bold; /* Make the font bold */
-    font-family: 'Arial', sans-serif; /* Change the font family */
+/* Header style for control containers with sliders */
+.control-container-slider h2 {
+    margin-top: 1vw;
+    margin-bottom: 0;
+    color: #333;
+    font-size: 1.5em;
+    text-align: center;
+    font-weight: bold;
+    font-family: 'Arial', sans-serif;
 }
 
+/* Container for round sliders */
 .roundslider-container {
     display: flex;
     flex-direction: row;
-    justify-content: center; /* Center the flex items on the main axis */
+    justify-content: center;
     align-items: center;
     height: 15vw;
 }
 
-.roundslider-container .rs-range-color  {
+/* Styling for range color in round sliders */
+.roundslider-container .rs-range-color {
     background-color: var(--slider-primary-color);
 }
-.roundslider-container .rs-path-color  {
+
+/* Styling for path color in round sliders */
+.roundslider-container .rs-path-color {
     background-color: var(--slider-secondary-color);
 }
-.roundslider-container .rs-handle  {
+
+/* Styling for handles in round sliders */
+.roundslider-container .rs-handle {
     background-color: var(--slider-secondary-color);
     padding: 7px;
     border: 2px solid var(--slider-primary-color);
 }
-.roundslider-container .rs-handle.rs-focus  {
+
+/* Styling for focused handles in round sliders */
+.roundslider-container .rs-handle.rs-focus {
     border-color: var(--slider-primary-color);
 }
-.roundslider-container .rs-handle:after  {
+
+/* Styling for the handle's after state in round sliders */
+.roundslider-container .rs-handle:after {
     border-color: var(--slider-primary-color);
     background-color: var(--slider-primary-color);
 }
-.roundslider-container .rs-border  {
+
+/* Styling for borders in round sliders */
+.roundslider-container .rs-border {
     border-color: transparent;
 }
 
+/* Styling for buttons in round slider container */
 .roundslider-container button {
     background-color: transparent;
-    width: 40px; /* Adjust the width of the buttons */
-    height: 40px; /* Adjust the height of the buttons */
+    width: 40px;
+    height: 40px;
     cursor: pointer;
-    font-size: 1.5em; /* Adjust font size as needed */
-    color: #000; /* Set the color as needed */
+    font-size: 1.5em;
+    color: #000;
 }
 
+/* Footer styling */
+footer {
+    text-align: center;
+    padding: 0.1vh;
+    background-color: var(--footer-background-color);
+    color: white;
+    text-align: center; /* Center the text horizontally */
+    font-family: 'Arial', sans-serif; /* Change the font family */
+}

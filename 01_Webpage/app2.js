@@ -6,11 +6,13 @@ var webSocket = new WebSocket("ws://192.168.1.139:8000");
 // Call readAllData() after the WebSocket connection is established
 webSocket.onopen = function(event) {
     console.log("Connection opened", event);
+    document.getElementById('connection').textContent = "Connected";
     readAllData(); // Request utility data once the connection is open
 };
 
 webSocket.onerror = function(error) {
     console.log("WebSocket Error", error);
+    document.getElementById('connection').textContent = "No Connection";
 };
 
 webSocket.onmessage = function(message) {
@@ -45,27 +47,25 @@ document.addEventListener('DOMContentLoaded', function() {
     // Adjust Slider Size
     adjustSliderSize();
     $(window).resize(adjustSliderSize);
+
+    // Start polling for alarm state and temperature
+    setInterval(getAlarmState, 5000); // Poll every 5 seconds
+    setInterval(getTemperature, 5000);
 });
 
 function attachEventListeners() {
     // Event listeners for utility controls
     document.getElementById('tv-toggle').addEventListener('click', toggleTV);
-    document.getElementById('alarm-toggle').addEventListener('click', toggleAlarm);
+    document.getElementById('heater-toggle').addEventListener('click', toggleHeater);
+    document.getElementById('lamp1-toggle').addEventListener('click', toggleLamp1);
     document.getElementById('lamp2-toggle').addEventListener('click', toggleLamp2);
-    document.getElementById('lamp3-toggle').addEventListener('click', toggleLamp3);
 
-    // Heater and Lamp Sliders
-    $("#heater-plus-btn").click(function() {
-        updateAndSendSliderValue("#heater-slider", 1, "heater");
-    });
-    $("#heater-minus-btn").click(function() {
-        updateAndSendSliderValue("#heater-slider", -1, "heater");
-    });
+    // Rear Lamp Sliders
     $("#lamp-plus-btn").click(function() {
-        updateAndSendSliderValue("#lamp-slider", 1, "lamp1");
+        updateAndSendSliderValue("#lamp-slider", 1, "RLamp");
     });
     $("#lamp-minus-btn").click(function() {
-        updateAndSendSliderValue("#lamp-slider", -1, "lamp1");
+        updateAndSendSliderValue("#lamp-slider", -1, "RLamp");
     });
 
     // Menu Button Click
@@ -77,7 +77,7 @@ function attachEventListeners() {
             menuButton.style.right = '1%'; // Reset button position
         } else {
             menu.style.right = '0px'; // Show menu
-            menuButton.style.right = 'calc(1% + 250px)'; // Move button with menu
+            menuButton.style.right = 'calc(5%)'; // Move button with menu
         }
     });
 
@@ -112,25 +112,15 @@ function attachEventListeners() {
     });
 }
 
-// Initialize the RoundSliders
+// Initialize the RoundSlider
 $(document).ready(function() {
-    // Initialize the RoundSlider for the heater
-    $("#heater-slider").roundSlider({
-        sliderType: "min-range",
-        value: 25, // Example initial value
-        change: function(event) {
-            // This function is called when the slider value changes
-            setSliderValue("heater", event.value);
-        }
-    });
-
     // Initialize the RoundSlider for the lamp
     $("#lamp-slider").roundSlider({
         sliderType: "min-range",
         value: 25, // Example initial value
         change: function(event) {
             // This function is called when the slider value changes
-            setSliderValue("lamp1", event.value);
+            setSliderValue("RLamp", event.value);
         }
     });
 });
@@ -160,19 +150,19 @@ function toggleTV() {
     console.log("TV toggled");
 }
 
-function toggleAlarm() {
-    sendCommand({ action: "toggle", utility: "alarm" });
-    console.log("Alarm toggled");
+function toggleHeater() {
+    sendCommand({ action: "toggle", utility: "heather" });
+    console.log("Heather toggled");
+}
+
+function toggleLamp1() {
+    sendCommand({ action: "toggle", utility: "lamp1" });
+    console.log("Lamp 1 toggled");
 }
 
 function toggleLamp2() {
     sendCommand({ action: "toggle", utility: "lamp2" });
     console.log("Lamp 2 toggled");
-}
-
-function toggleLamp3() {
-    sendCommand({ action: "toggle", utility: "lamp3" });
-    console.log("Lamp 3 toggled");
 }
 
 function setSliderValue(utility, value) {
@@ -188,6 +178,16 @@ function updateAndSendSliderValue(sliderId, change, utility) {
     setSliderValue(utility, newValue);
 }
 
+function getAlarmState() {
+    sendCommand({ action: "get", utility: "alarm" });
+}
+
+
+function getTemperature() {
+    sendCommand({ action: "get", utility: "temperature" });
+}
+
+
 // ------------------ UI Update Functions ------------------
 
 // Function to update the UI with utility data
@@ -197,9 +197,14 @@ function updateUIWithUtilityData(data) {
         updateTVState(data.tvState);
     }
 
-    // Update the Alarm state
-    if(data.alarmState !== undefined) {
+    // Update the alarm state
+    if (data.alarmState !== undefined) {
         updateAlarmState(data.alarmState);
+    }
+
+    // Update the lamp1 state
+    if(data.led1State !== undefined) {
+        updateLamp1State(data.led1State);
     }
 
     // Update the lamp2 state
@@ -207,25 +212,26 @@ function updateUIWithUtilityData(data) {
         updateLamp2State(data.led2State);
     }
 
-    // Update the lamp3 state
-    if(data.led3State !== undefined) {
-        updateLamp3State(data.led3State);
+    // Update the heater state
+    if(data.heaterState !== undefined) {
+        updateHeatherState(data.heaterState);
     }
 
-    // Update the Heater slider
-    if(data.heatState !== undefined) {
-        if(data.heatState === 1) {
-            $("#heater-slider").roundSlider("setValue", 100);
-        } else {
-            $("#heater-slider").roundSlider("setValue", 0);
-        }
+    // Update the temperature
+    if(data.temperature !== undefined) {
+        document.getElementById('temp-status').textContent = data.temperature + " °C";
+    } else {
+        document.getElementById('temp-status').textContent = "Unknown Temp";
     }
+    
+
+    // mir müesse äuä dr lampe slider garniod implementiere, het ja ke get funktion im webhouse.h
 
     // Update the Lamp slider, wäls fählt temp -> led1
     // TODO
-    if(data.temperature !== undefined) {
-        $("#lamp-slider").roundSlider("setValue", data.temperature);
-    }
+    //if(data.temperature !== undefined) {
+    //    $("#lamp-slider").roundSlider("setValue", data.temperature);
+    //}
 }
 
 // Function to update the TV state
@@ -239,14 +245,36 @@ function updateTVState(state) {
     }
 }
 
+// Function to update the Heater state
+function updateHeatherState(state) {
+    // Logic to update Heater's UI, e.g., toggling a button class
+    var heatherButton = document.getElementById('heather-toggle');
+    if(state === 1) {
+        heatherButton.classList.add("button-toggled");
+    } else {
+        heatherButton.classList.remove("button-toggled");
+    }
+}
+
 // Function to update the Alarm state
 function updateAlarmState(state) {
     // Logic to update Alarm's UI, e.g., toggling a button class
-    var alarmButton = document.getElementById('alarm-toggle');
-    if(state === 1) {
-        alarmButton.classList.add("button-toggled");
+    var alarmIcon = document.getElementById('alarm-icon');
+    if (state === 1) {
+        alarmIcon.classList.add('on');
     } else {
-        alarmButton.classList.remove("button-toggled");
+        alarmIcon.classList.remove('on');
+    }
+}
+
+// Function to update the lamp1 state
+function updateLamp1State(state) {
+    // Logic to update lamp1's UI, e.g., toggling a button class
+    var lamp1Button = document.getElementById('lamp1-toggle');
+    if(state === 1) {
+        lamp1Button.classList.add("button-toggled");
+    } else {
+        lamp1Button.classList.remove("button-toggled");
     }
 }
 
@@ -261,25 +289,13 @@ function updateLamp2State(state) {
     }
 }
 
-// Function to update the lamp3 state
-function updateLamp3State(state) {
-    // Logic to update lamp3's UI, e.g., toggling a button class
-    var lamp3Button = document.getElementById('lamp3-toggle');
-    if(state === 1) {
-        lamp3Button.classList.add("button-toggled");
-    } else {
-        lamp3Button.classList.remove("button-toggled");
-    }
-}
-
-
 function adjustSliderSize() {
     var viewportWidth = $(window).width();
     
     // Calculate sizes based on viewport height or width
-    var radius = viewportWidth * 0.06; // Example: 6% of viewport width
-    var width = viewportWidth * 0.005; // Example: 0.5% of viewport width
-    var handleSize = viewportWidth * 0.015; // Example: 1.5% of viewport width
+    var radius = viewportWidth * 0.06; 
+    var width = viewportWidth * 0.005; 
+    var handleSize = viewportWidth * 0.015;
 
     $(".roundslider").roundSlider({
     radius: radius,
