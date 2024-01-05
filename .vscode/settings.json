@@ -1,5 +1,7 @@
 {
     "files.associations": {
-        "handshake.h": "c"
+        "handshake.h": "c",
+        "webhouse.h": "c",
+        "bcm2835.h": "c"
     }
 }

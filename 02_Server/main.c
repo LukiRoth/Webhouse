@@ -51,21 +51,19 @@ typedef int int32_t;
 
 #define SERVER_PORT 8000		// Port number for the server
 #define BACKLOG 5 				// Number of allowed connections
-#define RX_BUFFER_SIZE 512   	// Buffer size for receiving data, maybe 1024
+#define RX_BUFFER_SIZE 1024   	// Buffer size for receiving data, maybe 1024
 
 //----- Function prototypes ----------------------------------------------------
 static int InitSocket(void);
 static int HandleHandshake(int com_sock_id, char* rxBuf);
 static int CheckAndHandleCloseFrame(int com_sock_id, char* rxBuf, int rx_data_len);
 static void DecodeMessage(int com_sock_id, char* rxBuf, int rx_data_len);
-static void processCommand(char*, char*);
+static int processCommand(char*, char*);
 static void shutdownHook (int32_t);
-
-
-
 
 //----- Global variables -------------------------------------------------------
 static volatile int eShutdown = FALSE;
+static int dutyCycleLed = 0;
 
 /*******************************************************************************
  *  function :    main
@@ -123,15 +121,18 @@ int main(int argc, char **argv) {
 
 		// If a new WebSocket message have been received
 		if (rx_data_len > 0) {
+            printf("Received %d bytes\n", rx_data_len);
 			rxBuf[rx_data_len] = '\0';
 
 			// Is the message a handshake request
-			if(HandleHandshake(com_sock_id, rxBuf) == TRUE) {				
+			if(HandleHandshake(com_sock_id, rxBuf) == TRUE) {	
+                printf("Handshake handled\n");			
 				continue;
 			}
 
 			// Is the message a close frame
 			if(!CheckAndHandleCloseFrame(com_sock_id, rxBuf, rx_data_len)) {
+                printf("Close frame received\n");
 				com_sock_id = -1;	 	// Update as the socket is closed
 				continue;
 			}
@@ -261,7 +262,6 @@ static int CheckAndHandleCloseFrame(int com_sock_id, char* rxBuf, int rx_data_le
 {
     uint8_t opcode = rxBuf[0] & 0x0F;
     if (opcode == 0x8) { // Close frame detected
-        printf("Close frame received\n");
         char closeFrame[2] = { 0x88, 0x00 }; // Simple close frame
         send(com_sock_id, closeFrame, sizeof(closeFrame), 0);
         close(com_sock_id);
@@ -283,98 +283,181 @@ static int CheckAndHandleCloseFrame(int com_sock_id, char* rxBuf, int rx_data_le
 static void DecodeMessage(int com_sock_id, char* rxBuf, int rx_data_len)
 {
 	char command[rx_data_len];
-	decode_incoming_request(rxBuf, command);
-	command[strlen(command)] = '\0';
-	printf("[%d] Command: {%s}\n", __LINE__, command);
-	
-	char response[RX_BUFFER_SIZE];
-	processCommand(command, response);
+	if(decode_incoming_request(rxBuf, command, rx_data_len) == -1){
+        printf("Error decoding incoming request\n");
+        fflush(stdout);
+        return;
+    }
 
-	//char response[] = "<Command executed>";
+	command[strlen(command)] = '\0';
+	char response[RX_BUFFER_SIZE];
+	if(!processCommand(command, response)){
+        printf("Error processing command, response: %s \n", response);
+        fflush(stdout);
+    }
+
+    // Send the response
 	char codedResponse[strlen(response)+2];
 	code_outgoing_response (response, codedResponse);
+    //printf("Response: %s\n", response);
+    //printf("Coded response: %s\n", codedResponse);
 	send(com_sock_id, (void *)codedResponse, strlen(codedResponse), 0);
 }
 
-static void processCommand(char* command, char* response) 
+/*******************************************************************************
+ * @brief    Processes the received command and creates a response.
+ *
+ * @param    command   The received command.
+ * @param    response  The response to be sent back.
+ * @return   void
+ ******************************************************************************/
+static int processCommand(char* command, char* response) 
 {
+    printf("[%d] Command: {%s}\n", __LINE__, command);
+    fflush(stdout);
+
     json_error_t error;
     json_t *root = json_loads(command, 0, &error);
 
     if (!root) {
+        // Error handling
         fprintf(stderr, "error: on line %d: %s\n", error.line, error.text);
-        sprintf(response, "{\"type\":\"Error\",\"message\":\"Invalid JSON\"}");
-        return;
+        fprintf(stderr, "Command: %s\n", command);
+        sprintf(response, "{\"type\":\"CommandResponse\",\"action\":\"-\",\"status\":\"Error\",\"message\":\"Invalid JSON\"}", command);
+        return FALSE;
     }
 
     json_t *action = json_object_get(root, "action");
-    json_t *utility = json_object_get(root, "utility");
 
-    if (json_is_string(action) && json_is_string(utility)) {
-        const char *action_str = json_string_value(action);
+    if (!json_is_string(action)) {
+        sprintf(response, "{\"type\":\"CommandResponse\",\"action\":\"-\",\"status\":\"Error\",\"message\":\"Missing or invalid action\"}", command);
+        printf("[%d] Response: {%s}\n", __LINE__, response);
+        return FALSE;
+    }
+
+    // Handle different actions
+    const char *action_str = json_string_value(action);
+
+    if (strcmp(action_str, "read") == 0) {
+        json_t *utilities = json_object_get(root, "utilities");
+        
+        if (!json_is_array(utilities)) {
+            sprintf(response, "{\"type\":\"CommandResponse\",\"action\":\"read\",\"status\":\"Error\",\"message\":\"Missing or invalid utilities\"}");
+            return FALSE;
+        }
+
+        // Create JSON response
+        json_t *res = json_object();
+        json_object_set_new(res, "type", json_string("DataResponse"));
+        json_object_set_new(res, "action", json_string("read"));
+
+        json_t *data = json_object();
+
+        // Iterate through the utilities array
+        size_t index;
+        json_t *value;
+        json_array_foreach(utilities, index, value) {
+            if (json_is_string(value)) {
+                const char *utility_str = json_string_value(value);
+
+                // Handle different utilities
+                if (strcmp(utility_str, "tv") == 0) {
+                    json_object_set_new(data, "tv", json_integer(getTVState()));
+                } else if (strcmp(utility_str, "heater") == 0) {
+                    json_object_set_new(data, "heater", json_integer(getHeatState()));
+                } else if (strcmp(utility_str, "temperature") == 0) {
+                    json_object_set_new(data, "temperature", json_real(getTemp()));
+                } else if (strcmp(utility_str, "alarm") == 0) {
+                    json_object_set_new(data, "alarm", json_integer(getAlarmState()));
+                } else if (strcmp(utility_str, "lamp1") == 0) {
+                    json_object_set_new(data, "lamp1", json_integer(getLED1State()));
+                } else if (strcmp(utility_str, "lamp2") == 0) {
+                    json_object_set_new(data, "lamp2", json_integer(getLED2State()));
+                } else if (strcmp(utility_str, "led_pwm") == 0) {
+                    json_object_set_new(data, "led_pwm", json_integer(dutyCycleLed));
+                }
+            }
+        }
+
+        json_object_set_new(res, "data", data);
+
+        // Convert JSON response to string
+        char *res_str = json_dumps(res, JSON_COMPACT);
+        if (res_str) {
+            strncpy(response, res_str, RX_BUFFER_SIZE);
+            free(res_str);
+        } else {
+            sprintf(response, "{\"type\":\"CommandResponse\",\"action\":\"read\",\"status\":\"Error\",\"message\":\"JSON conversion failed\"}");
+            return FALSE;
+        }
+        json_decref(res);
+    } // End of read
+    else if (strcmp(action_str, "write") == 0) {
+        // Example: {{"action":"write","utility":"RLamp","value":32}}
+        json_t *utility = json_object_get(root, "utility");
+        json_t *value = json_object_get(root, "value");
+
+        if (!json_is_string(utility) || !json_is_integer(value)) {
+            sprintf(response, "{\"type\":\"CommandResponse\",\"action\":\"write\",\"status\":\"Error\",\"message\":\"Missing or invalid utility or value\"}");
+            return FALSE;
+        }
+
         const char *utility_str = json_string_value(utility);
 
-        if (strcmp(action_str, "read") == 0 && strcmp(utility_str, "all") == 0) {
-            // Gather data from each utility
-            int tvState = getTVState();
-            int led1State = getLED1State();
-            int led2State = getLED2State();
-            int heatState = getHeatState();
-            float temperature = getTemp();
-            int alarmState = getAlarmState();
-            
-            // Construct a JSON response
-			json_t *res = json_pack("{s:s, s:i, s:i, s:i, s:i, s:f, s:i}", 
-									"type", "UtilityData",
-									"tvState", tvState, 
-									"led1State", led1State, 
-									"led2State", led2State, 
-									"heatState", heatState, 
-									"temperature", temperature, 
-									"alarmState", alarmState);
+        if (strcmp(utility_str, "RLamp") == 0) {
+            dutyCycleLed = (int)json_integer_value(value);
+            if(dutyCycleLed < 0)    dutyCycleLed = 0;
+            if(dutyCycleLed > 100)  dutyCycleLed = 100;
 
-            if (res) {
-                char *res_str = json_dumps(res, JSON_COMPACT);
-                if (res_str) {
-                    strncpy(response, res_str, RX_BUFFER_SIZE);
-                    free(res_str);
-                } else {
-                    sprintf(response, "{\"error\":\"JSON dump failed\"}");
-                }
-                json_decref(res);
-            } else {
-                sprintf(response, "{\"error\":\"JSON pack failed\"}");
-            }
-        } else if (strcmp(action_str, "toggle") == 0) {
-            if (strcmp(utility_str, "tv") == 0) {
-                getTVState() ? turnTVOff() : turnTVOn();
-            } else if (strcmp(utility_str, "alarm") == 0) {
-                // TODO: Implement alarm toggle logic
-            } else if (strcmp(utility_str, "lamp2") == 0) {
-                getLED2State() ? turnLED2Off() : turnLED2On();
-            } else if (strcmp(utility_str, "lamp3") == 0) {
-                // TODO: Implement lamp3 toggle logic
-            }
-            sprintf(response, "{\"type\":\"Success\",\"message\":\"Utility toggled\"}");
-        } else if (strcmp(action_str, "set") == 0) {
-            json_t *value = json_object_get(root, "value");
-            if (!json_is_integer(value)) {
-                sprintf(response, "{\"type\":\"Error\",\"message\":\"Invalid value\"}");
-            } else {
-                int val = (int)json_integer_value(value);
-                if (strcmp(utility_str, "heater") == 0) {
-                    // TODO: Implement heater set logic
-                } else if (strcmp(utility_str, "lamp1") == 0) {
-                    dimSLamp((uint16_t)val);
-                }
-                sprintf(response, "{\"type\":\"Success\",\"message\":\"Value set\"}");
-            }
-        } else {
-            sprintf(response, "{\"type\":\"Error\",\"message\":\"Invalid command\"}");
+            dimSLamp((uint16_t)dutyCycleLed);
+            sprintf(response, "{\"type\":\"CommandResponse\",\"action\":\"write\",\"status\":\"Success\",\"message\":\"RLamp set to %d\"}", dutyCycleLed);
+        }
+        else{
+            sprintf(response, "{\"type\":\"CommandResponse\",\"action\":\"write\",\"status\":\"Error\",\"message\":\"Invalid utility: %s\"}", utility_str);
+            return FALSE;
+        }
+        
+
+    }
+    else if (strcmp(action_str, "toggle") == 0) {
+        // Example: {{"action":"toggle","utility":"lamp1"}}
+        json_t *utility = json_object_get(root, "utility");
+
+        if (!json_is_string(utility)) {
+            sprintf(response, "{\"type\":\"CommandResponse\",\"action\":\"toggle\",\"status\":\"Error\",\"message\":\"Missing or invalid utility\"}");
+            return FALSE;
+        }
+
+        const char *utility_str = json_string_value(utility);
+        int utility_toggled = 1;
+
+        if (strcmp(utility_str, "tv") == 0) {
+            getTVState() ? turnTVOff() : turnTVOn();
+        }
+        else if (strcmp(utility_str, "heater") == 0) {
+            getHeatState() ? turnHeatOff() : turnHeatOn();
+        }
+        else if (strcmp(utility_str, "lamp1") == 0) {
+            getLED1State() ? turnLED1Off() : turnLED1On();
+        }
+        else if (strcmp(utility_str, "lamp2") == 0) {
+            getLED2State() ? turnLED2Off() : turnLED2On();
+        }
+        else{
+            utility_toggled = 0;
+        }
+            
+        if(utility_toggled){
+            sprintf(response, "{\"type\":\"CommandResponse\",\"action\":\"toggle\",\"status\":\"Success\",\"message\":\"%s toggled successfully\"}", utility_str);
+        } else{
+            sprintf(response, "{\"type\":\"CommandResponse\",\"action\":\"toggle\",\"status\":\"Error\",\"message\":\"Invalid utility: %s\"}", utility_str);
+            return FALSE;
         }
     } else {
-        sprintf(response, "{\"type\":\"Error\",\"message\":\"Missing or invalid fields\"}");
+        sprintf(response, "{\"type\":\"CommandResponse\",\"action\":\"%s\",\"status\":\"Error\",\"message\":\"Invalid action\"}", action_str);
+        return FALSE;
     }
 
     json_decref(root);
+    return TRUE;
 }

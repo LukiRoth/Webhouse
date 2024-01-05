@@ -121,7 +121,7 @@ int get_handshake_response(char hsrequest[], char hsresponse[])
     return (0);
 }
 
-int decode_incoming_request (char coded_request[], char request[]){
+/*int decode_incoming_request (char coded_request[], char request[]){
     // read the number of received data bytes
     int size = (coded_request[1] & 0x3F);
     
@@ -149,6 +149,63 @@ int decode_incoming_request (char coded_request[], char request[]){
     }
 
     return (size);
+}*/
+
+// New functionw as created because old lead to errors
+
+/*******************************************************************************
+ * @brief    Decodes an incoming WebSocket request.
+ *
+ *           This function decodes an incoming WebSocket request, considering
+ *           the variable length of the payload and the mask applied to the data.
+ *           It handles different payload lengths specified by the WebSocket
+ *           protocol, including lengths defined by additional bytes (126 for 16-bit
+ *           length and 127 for 64-bit length). It also applies the masking keys
+ *           as required by the WebSocket standard for messages sent from the client
+ *           to the server.
+ *
+ * @param    coded_request       The incoming WebSocket request in its encoded form.
+ * @param    request             Buffer to store the decoded request.
+ * @param    coded_request_len   Length of the encoded request.
+ *
+ * @return   The size of the decoded message, or -1 if an error occurs.
+ ******************************************************************************/
+int decode_incoming_request (char coded_request[], char request[], int coded_request_len) {
+    // Überprüfen der Länge des codierten Requests
+    if (coded_request_len < 2) {
+        return (-1); // Nicht genug Daten, um die Größe zu bestimmen
+    }
+
+    int size = coded_request[1] & 0x7F; // Die ersten 7 Bits der zweiten Byte lesen
+    int mask_offset = 2;
+
+    if (size == 126) {
+        // Zusätzliche 2 Bytes für die Größe
+        if (coded_request_len < 4) {
+            return (-1); // Nicht genug Daten für die Größe
+        }
+        size = ((coded_request[2] & 0xFF) << 8) | (coded_request[3] & 0xFF);
+        mask_offset = 4;
+    } else if (size == 127) {
+        // Zusätzliche 8 Bytes für die Größe
+        if (coded_request_len < 10) {
+            return (-1); // Nicht genug Daten für die Größe
+        }
+        // Behandeln Sie die 64-Bit-Ganzzahl für die Größe (falls benötigt)
+    }
+
+    if (coded_request_len < mask_offset + 4 + size) {
+        return (-1); // Nicht genug Daten für die gesamte Nachricht
+    }
+
+    char masks[4] = {coded_request[mask_offset], coded_request[mask_offset+1], coded_request[mask_offset+2], coded_request[mask_offset+3]};
+    
+    for (int i = 0; i < size; i++) {
+        request[i] = coded_request[i + mask_offset + 4] ^ masks[i % 4];
+    }
+    request[size] = 0;
+
+    return size;
 }
 
 int code_outgoing_response (char response[], char coded_response[]){
@@ -167,3 +224,37 @@ int code_outgoing_response (char response[], char coded_response[]){
 
     return (size);
 }
+
+/*
+int code_outgoing_response(char response[], char coded_response[]) {
+    int size = strlen(response);
+    printf("Size: %d\n", size);
+
+    if (size == 0) {
+        return -1;
+    }
+
+    int header_size;
+
+    // Set the FIN bit and text frame opcode
+    coded_response[0] = 0x81;
+
+    if (size <= 125) {
+        coded_response[1] = size;
+        header_size = 2;
+    } else if (size <= 0xFFFF) {
+        coded_response[1] = 126;
+        coded_response[2] = (size >> 8) & 0xFF; // Higher order byte
+        coded_response[3] = size & 0xFF;        // Lower order byte
+        header_size = 4;
+    } else {
+        // Handling for size greater than 65535 is not implemented
+        return -1;
+    }
+
+    // Copy the response into the coded_response buffer right after the header
+    memcpy(coded_response + header_size, response, size);
+    return size + header_size;
+}
+
+*/
