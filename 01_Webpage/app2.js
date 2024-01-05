@@ -7,34 +7,45 @@ var webSocket = new WebSocket("ws://192.168.1.139:8000");
 webSocket.onopen = function(event) {
     console.log("Connection opened", event);
     document.getElementById('connection').textContent = "Connected";
-    readAllData(); // Request utility data once the connection is open
+    //readUtilityData(["tv", "heater", "temperature", "alarm", "led_pwm", "lamp1", "lamp2"]);
+    
+    readUtilityData(["tv", "heater", "led_pwm", "lamp1", "lamp2"]);
 };
 
 webSocket.onerror = function(error) {
-    console.log("WebSocket Error", error);
+    console.error("WebSocket Error", error);
     document.getElementById('connection').textContent = "No Connection";
 };
 
 webSocket.onmessage = function(message) {
     console.log("Message received: ", message.data);
-    var data = JSON.parse(message.data);
 
-    if(data.type === "Success") {
-        console.log("Command executed successfully");
-        // Optionally, handle additional data if sent by the server
-    } else if(data.type === "Error") {
-        console.error("Error from server:", data.message);
-    } else if(data.type === "UtilityData") {
-        console.log("Utility data received:", data);
-        updateUIWithUtilityData(data);
-    } else {
-        console.log("Unknown response type or data update");
-        // Handle other types of responses or data updates
+    // Parse the JSON message
+    var data = JSON.parse(message.data);
+    var action = data.action;
+
+    if(data.type === "CommandResponse") {
+        var status = data.status;
+        var message = data.message;
+        if(status === "Success") {
+            console.log("Command executed successfully");
+        } else if(status === "Error"){
+            console.error("Command %s failed: %s", action, message);
+        } else{
+            console.warn("Unknown status:", status);
+        }
+    } 
+    else if(data.type === "DataResponse") {
+        if(action === "read") {
+            updateUIWithUtilityData(data.data);
+        }
+    }
+    else {
+        console.warn("Unknown response type or data update");
     }
 };
 
-
-// 
+// Event listeners for utility controls
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize Event Listeners
     attachEventListeners();
@@ -49,10 +60,10 @@ document.addEventListener('DOMContentLoaded', function() {
     $(window).resize(adjustSliderSize);
 
     // Start polling for alarm state and temperature
-    setInterval(getAlarmState, 5000); // Poll every 5 seconds
-    setInterval(getTemperature, 5000);
+    setInterval(() => readUtilityData(["alarm", "temperature"]), 5000); // Poll every 5 seconds
 });
 
+// Attach event listeners to the UI controls
 function attachEventListeners() {
     // Event listeners for utility controls
     document.getElementById('tv-toggle').addEventListener('click', toggleTV);
@@ -132,17 +143,12 @@ function sendCommand(commandObject) {
     console.log("Command sent: ", commandJSON);
 }
 
-// 
-function readAllData() {
-    sendCommand({ action: "read", utility: "all" });
-}
 
+// Sends a JSON command to the server to read the specified utility data
+// utility can be a string or an array of strings
 function readUtilityData(utility) {
-    sendCommand({ action: "read", utility: utility });
-}
-
-function setUtilityStatus(utility, status) {
-    sendCommand({ action: "set", utility: utility, status: status });
+    var utilities = Array.isArray(utility) ? utility : [utility];
+    sendCommand({ action: "read", utilities: utilities });
 }
 
 function toggleTV() {
@@ -151,8 +157,8 @@ function toggleTV() {
 }
 
 function toggleHeater() {
-    sendCommand({ action: "toggle", utility: "heather" });
-    console.log("Heather toggled");
+    sendCommand({ action: "toggle", utility: "heater" });
+    console.log("Heater toggled");
 }
 
 function toggleLamp1() {
@@ -166,7 +172,7 @@ function toggleLamp2() {
 }
 
 function setSliderValue(utility, value) {
-    sendCommand({ action: "set", utility: utility, value: value });
+    sendCommand({ action: "write", utility: utility, value: value });
     console.log(`${utility} set to`, value);
 }
 
@@ -178,60 +184,49 @@ function updateAndSendSliderValue(sliderId, change, utility) {
     setSliderValue(utility, newValue);
 }
 
-function getAlarmState() {
-    sendCommand({ action: "get", utility: "alarm" });
-}
-
-
-function getTemperature() {
-    sendCommand({ action: "get", utility: "temperature" });
-}
-
-
 // ------------------ UI Update Functions ------------------
 
 // Function to update the UI with utility data
 function updateUIWithUtilityData(data) {
+    console.log("Updating UI with utility data:", data);
+
     // Update the TV state
-    if(data.tvState !== undefined) {
-        updateTVState(data.tvState);
+    if(data.tv !== undefined) {
+        updateTVState(data.tv);
     }
 
     // Update the alarm state
-    if (data.alarmState !== undefined) {
-        updateAlarmState(data.alarmState);
+    if (data.alarm !== undefined) {
+        updateAlarmState(data.alarm);
     }
 
     // Update the lamp1 state
-    if(data.led1State !== undefined) {
-        updateLamp1State(data.led1State);
+    if(data.lamp1 !== undefined) {
+        updateLamp1State(data.lamp1);
     }
 
     // Update the lamp2 state
-    if(data.led2State !== undefined) {
-        updateLamp2State(data.led2State);
+    if(data.lamp2 !== undefined) {
+        updateLamp2State(data.lamp2);
     }
 
     // Update the heater state
-    if(data.heaterState !== undefined) {
-        updateHeatherState(data.heaterState);
+    if(data.heater !== undefined) {
+        updateHeatherState(data.heater);
     }
 
     // Update the temperature
     if(data.temperature !== undefined) {
-        document.getElementById('temp-status').textContent = data.temperature + " °C";
+        var temperatureRounded = data.temperature.toFixed(2); // Rundet auf zwei Dezimalstellen
+        document.getElementById('temp-status').textContent = temperatureRounded + " °C";
     } else {
         document.getElementById('temp-status').textContent = "Unknown Temp";
     }
-    
 
-    // mir müesse äuä dr lampe slider garniod implementiere, het ja ke get funktion im webhouse.h
-
-    // Update the Lamp slider, wäls fählt temp -> led1
-    // TODO
-    //if(data.temperature !== undefined) {
-    //    $("#lamp-slider").roundSlider("setValue", data.temperature);
-    //}
+    // Update the temperature
+    if(data.led_pwm !== undefined) {
+        $("#lamp-slider").roundSlider("setValue", data.led_pwm);
+    }
 }
 
 // Function to update the TV state
@@ -248,7 +243,7 @@ function updateTVState(state) {
 // Function to update the Heater state
 function updateHeatherState(state) {
     // Logic to update Heater's UI, e.g., toggling a button class
-    var heatherButton = document.getElementById('heather-toggle');
+    var heatherButton = document.getElementById('heater-toggle');
     if(state === 1) {
         heatherButton.classList.add("button-toggled");
     } else {
@@ -335,7 +330,7 @@ function updateWeather() {
                 'Weather: ' + temperatureInCelsius.toFixed(0) + ' °C ' + 
                 '<img src="' + iconUrl + '" alt="Weather Icon">';
         })
-        .catch(error => console.log('Error fetching weather data:', error));
+        .catch(error => console.error('Error fetching weather data:', error));
 }
 
 $(document).ready(function() {
