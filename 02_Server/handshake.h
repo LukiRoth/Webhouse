@@ -2,7 +2,7 @@
 #define HANDSHAKE_H
 
 extern int get_handshake_response  (char request[],       char hsresponse[]);
-extern int decode_incoming_request (char coded_request[], char request[]);
+extern int decode_incoming_request (char coded_request[], char request[], int coded_request_len);
 extern int code_outgoing_response  (char response[],      char coded_response[]);
 
 #define WS_KEY_LEN     24
