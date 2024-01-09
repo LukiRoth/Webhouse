@@ -63,7 +63,7 @@ static void shutdownHook (int32_t);
 
 //----- Global variables -------------------------------------------------------
 static volatile int eShutdown = FALSE;
-static int dutyCycleLed = 0;
+static int dutyCycleLed = 25;
 
 /*******************************************************************************
  *  function :    main
@@ -91,6 +91,14 @@ int main(int argc, char **argv) {
 	printf("Init Webhouse\n");
 	fflush(stdout);
 	initWebhouse();
+
+    // Init all Webhouse utilities
+    turnTVOff();
+    turnHeatOff();
+    dimRLamp(0);
+    dimSLamp(0);
+    turnLED1Off();
+    turnLED2Off();
 
 	// Initialize Socket
 	printf("Init Socket\n");
@@ -404,12 +412,19 @@ static int processCommand(char* command, char* response)
 
         const char *utility_str = json_string_value(utility);
 
-        if (strcmp(utility_str, "RLamp") == 0) {
+        if (strcmp(utility_str, "led_pwm") == 0) {
             dutyCycleLed = (int)json_integer_value(value);
             if(dutyCycleLed < 0)    dutyCycleLed = 0;
             if(dutyCycleLed > 100)  dutyCycleLed = 100;
 
-            dimSLamp((uint16_t)dutyCycleLed);
+            if(getLED1State()){
+                dimSLamp((uint16_t)dutyCycleLed);
+            }
+
+            if(getLED2State()){
+                dimRLamp((uint16_t)dutyCycleLed);
+            }
+            
             sprintf(response, "{\"type\":\"CommandResponse\",\"action\":\"write\",\"status\":\"Success\",\"message\":\"RLamp set to %d\"}", dutyCycleLed);
         }
         else{
@@ -438,10 +453,22 @@ static int processCommand(char* command, char* response)
             getHeatState() ? turnHeatOff() : turnHeatOn();
         }
         else if (strcmp(utility_str, "lamp1") == 0) {
-            getLED1State() ? turnLED1Off() : turnLED1On();
+            if(getLED1State()){
+                turnLED1Off();
+                dimSLamp(0);
+            } else{
+                turnLED1On();
+                dimSLamp((uint16_t)dutyCycleLed);
+            }
         }
         else if (strcmp(utility_str, "lamp2") == 0) {
-            getLED2State() ? turnLED2Off() : turnLED2On();
+            if(getLED2State()){
+                turnLED2Off();
+                dimRLamp(0);
+            } else{
+                turnLED2On();
+                dimRLamp((uint16_t)dutyCycleLed);
+            }
         }
         else{
             utility_toggled = 0;

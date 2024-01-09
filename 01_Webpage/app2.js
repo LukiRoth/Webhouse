@@ -1,5 +1,5 @@
 // Define the WebSocket connection
-var webSocket = new WebSocket("ws://192.168.1.139:8000");
+var webSocket = new WebSocket("ws://192.168.2.100:8000");
 
 // WebSocket event handlers
 
@@ -73,10 +73,10 @@ function attachEventListeners() {
 
     // Rear Lamp Sliders
     $("#lamp-plus-btn").click(function() {
-        updateAndSendSliderValue("#lamp-slider", 1, "RLamp");
+        updateAndSendSliderValue("#lamp-slider", 1, "led_pwm");
     });
     $("#lamp-minus-btn").click(function() {
-        updateAndSendSliderValue("#lamp-slider", -1, "RLamp");
+        updateAndSendSliderValue("#lamp-slider", -1, "led_pwm");
     });
 
     // Menu Button Click
@@ -131,7 +131,7 @@ $(document).ready(function() {
         value: 25, // Example initial value
         change: function(event) {
             // This function is called when the slider value changes
-            setSliderValue("RLamp", event.value);
+            setSliderValue("led_pwm", event.value);
         }
     });
 });
@@ -188,7 +188,7 @@ function updateAndSendSliderValue(sliderId, change, utility) {
 
 // Function to update the UI with utility data
 function updateUIWithUtilityData(data) {
-    console.log("Updating UI with utility data:", data);
+    //console.log("Updating UI with utility data:", data);
 
     // Update the TV state
     if(data.tv !== undefined) {
