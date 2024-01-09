@@ -431,8 +431,6 @@ static int processCommand(char* command, char* response)
             sprintf(response, "{\"type\":\"CommandResponse\",\"action\":\"write\",\"status\":\"Error\",\"message\":\"Invalid utility: %s\"}", utility_str);
             return FALSE;
         }
-        
-
     }
     else if (strcmp(action_str, "toggle") == 0) {
         // Example: {{"action":"toggle","utility":"lamp1"}}
