@@ -401,7 +401,7 @@ static int processCommand(char* command, char* response)
         json_decref(res);
     } // End of read
     else if (strcmp(action_str, "write") == 0) {
-        // Example: {{"action":"write","utility":"RLamp","value":32}}
+        // Example: {{"action":"write","utility":"led_pwm","value":32}}
         json_t *utility = json_object_get(root, "utility");
         json_t *value = json_object_get(root, "value");
 
