@@ -17,6 +17,7 @@
     --slider-secondary-color: #bbe1fa;
     
     /* Spacing variables */
+    --text-size-p: 1vw;
     --base-margin: 1%;
     --base-padding: 5vh;
     --small-padding: 0.5%;
@@ -92,12 +93,13 @@ section > div {
     position: absolute; /* Positioned relative to the header */
     top: 50%;
     left: 1%;
+    font-size: var(--text-size-p);
     transform: translateY(-50%); /* Adjust for vertical centering */
     color: white;
     display: flex;
     align-items: center;
     background-color: var(--primary-color1);
-    padding: 0.1vw;
+    padding: 0;
     border-radius: 1vw;
 }
 
@@ -136,7 +138,7 @@ section > div {
 
 /* Weather icon styling */
 #weather-icon {
-    width: 25px;
+    width: 50px;
     height: auto;
     margin-left: 5px;
     display: inline-block;
@@ -145,7 +147,8 @@ section > div {
 #connection {
     position: absolute;
     top: 50%;
-    margin-left: 40%;
+    margin-left: 50%;
+    font-size: var(--text-size-p);
     transform: translateY(-50%);
     color: white;
     display: flex;
@@ -476,6 +479,6 @@ footer {
     padding: 0.1vh;
     background-color: var(--footer-background-color);
     color: white;
-    text-align: center; /* Center the text horizontally */
-    font-family: 'Arial', sans-serif; /* Change the font family */
+    text-align: center; 
+    font-family: 'Arial', sans-serif; 
 }
