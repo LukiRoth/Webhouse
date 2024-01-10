@@ -1,21 +1,23 @@
 // Define the WebSocket connection
 var webSocket = new WebSocket("ws://192.168.1.101:8000");
 
-// WebSocket event handlers
-
-// Call readAllData() after the WebSocket connection is established
+//--- WebSocket event handlers ---//
+// WebSocket connection opened
 webSocket.onopen = function(event) {
     console.log("Connection opened", event);
     document.getElementById('connection').textContent = "Connected";
 
+    // Read the initial utility data
     readUtilityData(["tv", "heater", "led_pwm", "lamp_floor", "lamp_ceil"]);
 };
 
+// WebSocket connection closed
 webSocket.onerror = function(error) {
     console.error("WebSocket Error", error);
     document.getElementById('connection').textContent = "No Connection";
 };
 
+// WebSocket message received
 webSocket.onmessage = function(message) {
     console.log("Message received: ", message.data);
 
@@ -24,6 +26,7 @@ webSocket.onmessage = function(message) {
     var action = data.action;
 
     if(data.type === "CommandResponse") {
+        // Handle the response to a command
         var status = data.status;
         var message = data.message;
         if(status === "Success") {
@@ -35,11 +38,13 @@ webSocket.onmessage = function(message) {
         }
     } 
     else if(data.type === "DataResponse") {
+        // Handle the response to a data request
         if(action === "read") {
             updateUIWithUtilityData(data.data);
         }
     }
     else {
+        // Handle unknown response type
         console.warn("Unknown response type or data update");
     }
 };
@@ -150,26 +155,32 @@ function readUtilityData(utility) {
     sendCommand({ action: "read", utilities: utilities });
 }
 
+// Sends a JSON command to the server to write the specified utility data
+// Tv Toggle
 function toggleTV() {
     sendCommand({ action: "toggle", utility: "tv" });
     console.log("TV toggled");
 }
 
+// Heater Toggle
 function toggleHeater() {
     sendCommand({ action: "toggle", utility: "heater" });
     console.log("Heater toggled");
 }
 
+// Floor Lamp Toggle
 function toggleLampFloor() {
     sendCommand({ action: "toggle", utility: "lamp_floor" });
     console.log("Lamp 1 toggled");
 }
 
+// Ceiling Lamp Toggle
 function toggleLampCeil() {
     sendCommand({ action: "toggle", utility: "lamp_ceil" });
     console.log("Lamp 2 toggled");
 }
 
+// Function to set the slider value
 function setSliderValue(utility, value) {
     sendCommand({ action: "write", utility: utility, value: value });
     console.log(`${utility} set to`, value);
@@ -283,6 +294,10 @@ function updateLampCeilState(state) {
     }
 }
 
+/**
+ * Dynamically adjusts the slider size based on the viewport width.
+ * This ensures that the slider is responsive and looks consistent across different screen sizes.
+ */
 function adjustSliderSize() {
     var viewportWidth = $(window).width();
     
@@ -301,30 +316,49 @@ function adjustSliderSize() {
     });
 }
 
+/**
+ * Updates the time display every second.
+ * This function creates a clock that stays current by refreshing every second.
+ */
 function updateTime() {
     var now = new Date();
+    // Format time as HH:MM, ensuring minutes are zero padded
     var formattedTime = now.getHours() + ':' + now.getMinutes().toString().padStart(2, '0');
     document.getElementById('time').textContent = formattedTime;
-    setTimeout(updateTime, 1000); // Update the time every second
+    
+    // Recursive call to keep the clock updated
+    setTimeout(updateTime, 1000);
 }
 
+/**
+ * Updates the date display.
+ * This function should likely be called once per day, as the date does not change as frequently as time.
+ */
 function updateDate() {
     var now = new Date();
-    var formattedDate = now.getDate() + '.' + now.getMonth() + '.' + now.getFullYear();
+    // Format date as DD.MM.YYYY
+    var formattedDate = now.getDate() + '.' + (now.getMonth() + 1) + '.' + now.getFullYear();
     document.getElementById('date').textContent = formattedDate;
-    setTimeout(updateTime, 1000); // Update the time every second
+    
+    // Note: Likely intended to call updateDate() recursively, not updateTime()
+    setTimeout(updateDate, 86400000); // Update the date every day
 }
 
+/**
+ * Fetches and displays the current weather information from the OpenWeatherMap API.
+ * Displays temperature in Celsius and the weather condition icon.
+ */
 function updateWeather() {
-    fetch('https://api.openweathermap.org/data/2.5/weather?lat=47.14&lon=7.25&appid=74678fe98ac424208ce3911f63e341ad')
+    // API call to OpenWeatherMap with predefined latitude and longitude
+    fetch('https://api.openweathermap.org/data/2.5/weather?lat=47.14&lon=7.25&appid=YOUR_API_KEY_HERE')
         .then(response => response.json())
         .then(data => {
-            var temperatureInKelvin = data.main.temp; // Get temperature in Kelvin
-            var temperatureInCelsius = temperatureInKelvin - 273.15; // Convert to Celsius
-            var iconCode = data.weather[0].icon; // Get the icon code from the API response
-            var iconUrl = 'https://openweathermap.org/img/wn/' + iconCode + '.png'; // Construct icon URL
+            // Extract temperature in Kelvin and convert to Celsius
+            var temperatureInCelsius = data.main.temp - 273.15;
+            // Extract icon code and construct the URL for the weather icon
+            var iconUrl = 'https://openweathermap.org/img/wn/' + data.weather[0].icon + '.png';
 
-            // Set the weather text and icon
+            // Update the weather container with temperature and icon image
             document.getElementById('weather').innerHTML = 
                 'Weather: ' + temperatureInCelsius.toFixed(0) + ' °C ' + 
                 '<img src="' + iconUrl + '" alt="Weather Icon">';
@@ -332,12 +366,23 @@ function updateWeather() {
         .catch(error => console.error('Error fetching weather data:', error));
 }
 
+/**
+ * Button toggle behavior.
+ * Toggles the 'button-toggled' class on click to provide a visual feedback.
+ */
 $(document).ready(function() {
     $('#button-container button').click(function() {
         $(this).toggleClass('button-toggled');
     });
 });
 
+/**
+ * Tooltip formatter for roundSlider.
+ * Formats the tooltip to display the value with a percentage symbol.
+ * 
+ * @param args - The arguments provided by the roundSlider update event.
+ * @return The formatted tooltip value.
+ */
 function tooltipVal1(args) {
     return args.value + "%";
 }

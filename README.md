@@ -31,10 +31,12 @@ To compile and install the Webhouse system:
 
    ```bash
    sudo ./Template
-4. Open the webhouse.html file from the 01_Webpage directory in a web browser to access the Webhouse interface.
+4. Navigate to the `01_Webpage` directory. Make sure that the IP address of the Raspberry-Pi is correctly configured in the `app.js` file.
+5. Open the webhouse.html file from the 01_Webpage directory in a web browser to access the Webhouse interface.
 
 ## Usage
-Upon launching the server, you can control the various utilities like lights, heater, and TV through the web interface. Real-time updates and control commands are communicated using WebSockets, ensuring a responsive user experience.
+Upon launching the server, you can control the various utilities like lights, heater, and TV through the web interface. Real-time updates and control commands are communicated using WebSockets, ensuring a responsive user experience. Before using the system, ensure that the Raspberry-Pi is connected to the Internet and the server is running. 
+Also make sure that the IP address of the Raspberry-Pi is correctly configured in the `app.js` file in the 01_Webpage directory.
 
 For more detailed usage instructions, refer to the README.md files within each directory and the 05_Documentation folder.
 
