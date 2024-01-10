@@ -1,19 +1,45 @@
-Create a README.md file in your 02_Server directory to document the purpose of the server, how to compile and run it, and any other important details.
+# Webhouse Server Application
 
-Summary of each file and its purpose:
+## Overview
+This server application forms the core of the Raspberry-Pi Webhouse project. It handles various utilities, including web communication, JSON data processing, and controlling the Webhouse environment.
 
-1. **`base64.c`【39†source】**: Implements Base64 encoding and decoding as defined in RFC1341. This file contains functions for encoding and decoding data to and from Base64 format, which is often used in data communication, especially in web contexts.
+## File Descriptions
 
-2. **`handshake.c`【43†source】**: Contains functions related to the WebSocket handshake process. It includes a function to generate a handshake response from a given request and functions for encoding and decoding WebSocket messages.
+1. **`base64.c`**: Implements Base64 encoding and decoding as defined in RFC1341, essential for data communication in web contexts.
 
-3. **`jansson.h`【47†source】**: The header file for the Jansson library, which is used for handling JSON data. It defines functions and types for creating, manipulating, and querying JSON data, an important aspect for web-based communication and data handling.
+2. **`base64.h`**: Header file for the Base64 implementation, defining necessary structures and functions.
 
-4. **`main.c`【51†source】**: The main entry point for your application. It includes the initialization of the webhouse, handling of signals, and the main loop for the application.
+3. **`data.json`**: Stores the data for the Webhouse.
 
-5. **`sha1.c`【57†source】**: Implements the SHA-1 hashing algorithm, which is used for generating a message digest. This file contains functions for computing SHA-1 hashes, which are useful for data integrity checks and in various security protocols.
+4. **`handshake.c`**: Manages the WebSocket handshake process, crucial for establishing WebSocket connections.
 
-6. **`sha1.h`【61†source】**: The header file for the SHA-1 hashing implementation. It defines the SHA1Context structure and function prototypes for SHA-1 hashing operations.
+5. **`jansson.h`**: Header file for the Jansson library, facilitating JSON data creation, manipulation, and querying.
 
-7. **`Webhouse.c`【65†source】**: Contains functions for controlling various aspects of the webhouse, such as turning on/off the TV, dimming lamps, controlling LEDs, managing the heater, and retrieving temperature and alarm states. This file is central to controlling the I/O of your embedded system.
+6. **`main.c`**: The main entry point of the application. It initializes the Webhouse utilities and contains the main application loop.
 
-8. **`Webhouse.h`【69†source】**: The header file for `Webhouse.c`. It declares the functions provided in `Webhouse.c` for external use, ensuring that these functions can be called from other parts of your application.
+7. **`Makefile`**: The Makefile for the application, defining the build process.
+
+8. **`sha1.c`**:  Implements the SHA-1 hashing algorithm, used for generating secure message digests.
+
+9. **`sha1.h`**: Header file for the SHA-1 implementation, defining necessary structures and functions.
+
+10. **`Template`**: This is the executable file that is generated when the application is built. It is the application itself.
+
+11. **`Webhouse.c`**: Central to the application, this file contains functions for controlling various aspects of the Webhouse, like lighting, heating, and monitoring.
+
+12. **`Webhouse.h`**: Header file declaring the functions in Webhouse.c for external usage within the application.
+
+
+## Compilation
+To compile the server application, navigate to the 02_Server directory and run the following command:
+> make
+
+This will generate the executable file `Template` in the same directory.
+
+## Running the Server
+To run the server application, navigate to the 02_Server directory and run the following command:
+> sudo ./Template
+
+## Additional Notes
+- Ensure all dependencies are installed before compiling, especially the Jansson library for JSON processing.
+- The server uses port 8000 by default, as defined in the macros.
