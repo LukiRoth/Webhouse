@@ -1,28 +1,50 @@
-/******************************************************************************/
-/** \file       startup.c
+/*******************************************************************************
+ * @file       main.c
  *******************************************************************************
  *
- *  \brief      Main application for the Rasberry-Pi webhouse
+ * @brief      Main application for the Raspberry-Pi Webhouse project.
+ *             Initializes and runs the Webhouse utilities.
+ * 
+ * @details    This file contains the startup logic and main function 
+ *             for the Webhouse project. It was initially templated by Elham 
+ *             Firouzi and subsequently developed and finalized by Lukas Roth 
+ *             (rothl18) and Patrice Begert (begp1).
+ * 
+ * @author     Elham Firouzi (Initial template)
+ *             Lukas Roth (rothl18) - Development and Completion
+ *             Patrice Begert (begp1) - Development and Completion
  *
- *  \author     fue1
+ * @version    1.0
+ * @date       November 2021
  *
- *  \date       November 2021
+ * @remark     Last Modification
+ *             \li Elham Firouzi, November 2021, Template Creation
+ *             \li Lukas Roth (rothl18), Januar 2024, Project Completion
+ *             \li Patrice Begert (begp1), Januar 2024, Project Completion
  *
- *  \remark     Last Modification
- *               \li fue1, November 2021, Created
+/******************************************************************************
  *
- ******************************************************************************/
-/*
- *  functions  global:
+ *  Functions  global:
  *              main
- * 
- *  functions  local:
+ *
+ *  Functions  local:
  *              shutdownHook
+ *              InitWebhouseUtilities
+ *              InitSocket
+ *              HandleHandshake
+ *              CheckAndHandleCloseFrame
+ *              DecodeMessage
+ *              processCommand
+ *              SaveData
+ *              LoadData
  * 
- *  Autor	   Elham Firouzi
+ *  Authors:   Elham Firouzi (Initial template creation)
+ *             Lukas Roth (rothl18) - Development and Finalization
+ *             Patrice Begert (begp1) - Development and Finalization
  *
  ******************************************************************************/
 
+// type definitions
 typedef int int32_t;
 
 //----- Header-Files -----------------------------------------------------------
@@ -48,12 +70,13 @@ typedef int int32_t;
 //----- Macros -----------------------------------------------------------------
 #define TRUE 1
 #define FALSE 0
-
 #define SERVER_PORT 8000		// Port number for the server
 #define BACKLOG 5 				// Number of allowed connections
 #define RX_BUFFER_SIZE 1024   	// Buffer size for receiving data, maybe 1024
 
 //----- Function prototypes ----------------------------------------------------
+static int SaveData(void);
+static int LoadData(void);
 static void InitWebhouseUtilities(void);
 static int InitSocket(void);
 static int HandleHandshake(int com_sock_id, char* rxBuf);
@@ -61,8 +84,6 @@ static int CheckAndHandleCloseFrame(int com_sock_id, char* rxBuf, int rx_data_le
 static void DecodeMessage(int com_sock_id, char* rxBuf, int rx_data_len);
 static int processCommand(char*, char*);
 static void shutdownHook (int32_t);
-static void SaveData(void);
-static void LoadData(void);
 
 //----- Global variables -------------------------------------------------------
 static volatile int eShutdown = FALSE;
@@ -71,15 +92,11 @@ static int stateLampFloor = 0;
 static int stateLampCeiling = 0;
 
 /*******************************************************************************
- *  function :    main
- ******************************************************************************/
-/** \brief     void clear_rxBuffer(void)   Starts the socket server (ip: localhost, port:5000) and waits
- *                on a connection attempt of the client.
+ * @brief    Main function of the Webhouse project.
  *
- *  \type         global
- *
- *  \return       EXIT_SUCCESS
- *
+ * @param    argc  Number of command line arguments.
+ * @param    argv  Array of command line arguments.
+ * @return   EXIT_SUCCESS if successful, EXIT_FAILURE otherwise.
  ******************************************************************************/
 int main(int argc, char **argv) {
 	// Variables
@@ -113,6 +130,7 @@ int main(int argc, char **argv) {
 	// Main Loop
 	while (eShutdown == FALSE) {
 		if(com_sock_id < 0){
+            // Accept a new connection
 			com_sock_id = accept(server_sock_id, (struct sockaddr *)&client, &com_addrlen);
 			if (com_sock_id < 0) {
 				perror("accept failed");
@@ -124,12 +142,13 @@ int main(int argc, char **argv) {
 			}
 		}
 
+        // Receive data
 		char rxBuf[RX_BUFFER_SIZE];
 		int rx_data_len = recv (com_sock_id, (void *)rxBuf, RX_BUFFER_SIZE, MSG_DONTWAIT);
 
 		// If a new WebSocket message have been received
 		if (rx_data_len > 0) {
-            printf("Received %d bytes\n", rx_data_len);
+            //printf("Received %d bytes\n", rx_data_len);
 			rxBuf[rx_data_len] = '\0';
 
 			// Is the message a handshake request
@@ -150,6 +169,7 @@ int main(int argc, char **argv) {
 
 		}
 		else if (rx_data_len == 0) {
+            // Connection closed by the client
 			close(com_sock_id);
 			com_sock_id = -1;
 			printf("Connection closed\n");
@@ -176,6 +196,7 @@ int main(int argc, char **argv) {
 	fflush (stdout);
 	close(server_sock_id);
 
+    // Exit the program successfully
 	return EXIT_SUCCESS;
 }
 
@@ -195,24 +216,30 @@ static void shutdownHook(int32_t sig) {
 
 /*******************************************************************************
  * @brief    Initializes all Webhouse utilities.
- * 
- *           This needs to be done because otherwise the first read of the
- *           utilities state sometimes returns a wrong value.
+ *
+ *           Initializes the utilities to ensure consistent starting states.
+ *           This is necessary because the initial state reading of utilities 
+ *           might sometimes return incorrect values. To handle this, the 
+ *           function attempts to load the previous state from a file. If this 
+ *           fails, it sets default states for all utilities.
  *
  * @return   void
  ******************************************************************************/
 static void InitWebhouseUtilities(void)
 {
-    if(!LoadData()){
+    // Attempt to load the previous state of utilities
+    if (!LoadData()) {
+        // If loading fails, set default states
         turnTVOff();
         turnHeatOff();
 
-        if(stateLampFloor)
+        // Set the lamp states based on their current state and duty cycle
+        if (stateLampFloor)
             dimSLamp(dutyCycleLed);
         else
             dimSLamp(0);
 
-        if(stateLampCeiling)
+        if (stateLampCeiling)
             dimRLamp(dutyCycleLed);
         else
             dimRLamp(0);
@@ -224,9 +251,9 @@ static void InitWebhouseUtilities(void)
  *           It writes the states of TV, heater, floor lamp, ceiling lamp,
  *           and LED PWM duty cycle to 'data.json' in JSON format.
  *
- * @return   void
+ * @return   TRUE if successful, FALSE otherwise.
  ******************************************************************************/
-static void SaveData(void)
+static int SaveData(void)
 {
     // Define the filename where the data will be saved
     const char* filename = "data.json";
@@ -248,7 +275,7 @@ static void SaveData(void)
         fprintf(stderr, "Error converting JSON to string\n");
         fflush(stderr);
         json_decref(root);      // Release the JSON object
-        return;
+        return FALSE;
     }
 
     // Open the file for writing
@@ -259,7 +286,7 @@ static void SaveData(void)
         fflush(stderr);
         free(res_str);          // Free the JSON string
         json_decref(root);      // Release the JSON object
-        return;
+        return FALSE;
     }
 
     // Write the JSON string to the file
@@ -275,13 +302,15 @@ static void SaveData(void)
     fclose(fp);
     free(res_str);              // Free the JSON string
     json_decref(root);          // Release the JSON object
+
+    return TRUE;
 }
 
 /*******************************************************************************
  * @brief    Lädt den aktuellen Zustand der Webhouse-Umgebung aus einer Datei.
  *           Gibt TRUE zurück, wenn das Laden erfolgreich war, sonst FALSE.
  *
- * @return   int
+ * @return   TRUE if successful, FALSE otherwise.
  ******************************************************************************/
 static int LoadData(void)
 {
@@ -476,6 +505,7 @@ static int CheckAndHandleCloseFrame(int com_sock_id, char* rxBuf, int rx_data_le
  ******************************************************************************/
 static void DecodeMessage(int com_sock_id, char* rxBuf, int rx_data_len)
 {
+    // Decode the incoming request
 	char command[rx_data_len];
 	if(decode_incoming_request(rxBuf, command, rx_data_len) == -1){
         printf("Error decoding incoming request\n");
@@ -483,18 +513,21 @@ static void DecodeMessage(int com_sock_id, char* rxBuf, int rx_data_len)
         return;
     }
 
+    // Terminate the command string
 	command[strlen(command)] = '\0';
-	char response[RX_BUFFER_SIZE];
+
+    // Process the command and create a response
+    char response[RX_BUFFER_SIZE];
 	if(!processCommand(command, response)){
         printf("Error processing command, response: %s \n", response);
         fflush(stdout);
     }
 
-    // Send the response
+    // Encode the response
 	char codedResponse[strlen(response)+2];
 	code_outgoing_response (response, codedResponse);
-    //printf("Response: %s\n", response);
-    //printf("Coded response: %s\n", codedResponse);
+
+    // Send the response
 	send(com_sock_id, (void *)codedResponse, strlen(codedResponse), 0);
 }
 
@@ -503,13 +536,15 @@ static void DecodeMessage(int com_sock_id, char* rxBuf, int rx_data_len)
  *
  * @param    command   The received command.
  * @param    response  The response to be sent back.
- * @return   void
+ * @return   TRUE if successful, FALSE otherwise.
  ******************************************************************************/
 static int processCommand(char* command, char* response) 
 {
+    // Print the received command
     printf("[%d] Command: {%s}\n", __LINE__, command);
     fflush(stdout);
 
+    // Parse the command as JSON
     json_error_t error;
     json_t *root = json_loads(command, 0, &error);
 
@@ -600,14 +635,20 @@ static int processCommand(char* command, char* response)
 
         if (strcmp(utility_str, "led_pwm") == 0) {
             dutyCycleLed = (int)json_integer_value(value);
-            if(dutyCycleLed < 0)    dutyCycleLed = 0;
-            if(dutyCycleLed > 100)  dutyCycleLed = 100;
 
-            if(getLED1State()){
-                dimSLamp((uint16_t)dutyCycleLed);
+            // Check if the duty cycle is in the valid range
+            if(dutyCycleLed < 0){  
+                dutyCycleLed = 0;
+            }
+            if(dutyCycleLed > 100){
+                dutyCycleLed = 100;
             }
 
-            if(getLED2State()){
+            // Set the duty cycle for the lamps based on their current state
+            if(stateLampFloor){
+                dimSLamp((uint16_t)dutyCycleLed);
+            }
+            if(stateLampCeiling){
                 dimRLamp((uint16_t)dutyCycleLed);
             }
             

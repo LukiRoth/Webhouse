@@ -151,7 +151,7 @@ int get_handshake_response(char hsrequest[], char hsresponse[])
     return (size);
 }*/
 
-// New functionw as created because old lead to errors
+// New functionw as created because old lead to errors when request was to long (rothl18)
 
 /*******************************************************************************
  * @brief    Decodes an incoming WebSocket request.
@@ -226,6 +226,8 @@ int code_outgoing_response (char response[], char coded_response[]){
 }
 
 /*
+// Old function can only send responses to 124 bytes (rothl18)
+// TODO: This function still has to be completed, not working currently
 int code_outgoing_response(char response[], char coded_response[]) {
     int size = strlen(response);
     printf("Size: %d\n", size);
