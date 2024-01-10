@@ -54,16 +54,21 @@ typedef int int32_t;
 #define RX_BUFFER_SIZE 1024   	// Buffer size for receiving data, maybe 1024
 
 //----- Function prototypes ----------------------------------------------------
+static void InitWebhouseUtilities(void);
 static int InitSocket(void);
 static int HandleHandshake(int com_sock_id, char* rxBuf);
 static int CheckAndHandleCloseFrame(int com_sock_id, char* rxBuf, int rx_data_len);
 static void DecodeMessage(int com_sock_id, char* rxBuf, int rx_data_len);
 static int processCommand(char*, char*);
 static void shutdownHook (int32_t);
+static void SaveData(void);
+static void LoadData(void);
 
 //----- Global variables -------------------------------------------------------
 static volatile int eShutdown = FALSE;
 static int dutyCycleLed = 25;
+static int stateLampFloor = 0;
+static int stateLampCeiling = 0;
 
 /*******************************************************************************
  *  function :    main
@@ -93,12 +98,7 @@ int main(int argc, char **argv) {
 	initWebhouse();
 
     // Init all Webhouse utilities
-    turnTVOff();
-    turnHeatOff();
-    dimRLamp(0);
-    dimSLamp(0);
-    turnLED1Off();
-    turnLED2Off();
+    InitWebhouseUtilities();
 
 	// Initialize Socket
 	printf("Init Socket\n");
@@ -166,7 +166,11 @@ int main(int argc, char **argv) {
 
 		sleep(1);
 	}
+
+    // Save the current state of the Webhouse utilities
+    SaveData();
 	
+    // Close the Webhouse
 	closeWebhouse();
 	printf ("Close Webhouse\n");
 	fflush (stdout);
@@ -187,6 +191,188 @@ static void shutdownHook(int32_t sig) {
     printf("Signal %d received, initiating shutdown...\n", sig);
     fflush(stdout);
     eShutdown = TRUE;
+}
+
+/*******************************************************************************
+ * @brief    Initializes all Webhouse utilities.
+ * 
+ *           This needs to be done because otherwise the first read of the
+ *           utilities state sometimes returns a wrong value.
+ *
+ * @return   void
+ ******************************************************************************/
+static void InitWebhouseUtilities(void)
+{
+    if(!LoadData()){
+        turnTVOff();
+        turnHeatOff();
+
+        if(stateLampFloor)
+            dimSLamp(dutyCycleLed);
+        else
+            dimSLamp(0);
+
+        if(stateLampCeiling)
+            dimRLamp(dutyCycleLed);
+        else
+            dimRLamp(0);
+    }
+}
+
+/*******************************************************************************
+ * @brief    Saves the current state of the Webhouse utilities to a file.
+ *           It writes the states of TV, heater, floor lamp, ceiling lamp,
+ *           and LED PWM duty cycle to 'data.json' in JSON format.
+ *
+ * @return   void
+ ******************************************************************************/
+static void SaveData(void)
+{
+    // Define the filename where the data will be saved
+    const char* filename = "data.json";
+
+    // Create a new JSON object
+    json_t *root = json_object();
+    
+    // Set the values for each utility in the JSON object
+    json_object_set_new(root, "tv", json_integer(getTVState()));
+    json_object_set_new(root, "heater", json_integer(getHeatState()));
+    json_object_set_new(root, "lamp_floor", json_integer(stateLampFloor));
+    json_object_set_new(root, "lamp_ceil", json_integer(stateLampCeiling));
+    json_object_set_new(root, "led_pwm", json_integer(dutyCycleLed));
+
+    // Convert the JSON object to a string
+    char *res_str = json_dumps(root, JSON_COMPACT);
+    if(!res_str){
+        // Handle error if conversion fails
+        fprintf(stderr, "Error converting JSON to string\n");
+        fflush(stderr);
+        json_decref(root);      // Release the JSON object
+        return;
+    }
+
+    // Open the file for writing
+    FILE *fp = fopen(filename, "w");
+    if(!fp){
+        // Handle error if file opening fails
+        fprintf(stderr, "Error opening file: %s\n", filename);
+        fflush(stderr);
+        free(res_str);          // Free the JSON string
+        json_decref(root);      // Release the JSON object
+        return;
+    }
+
+    // Write the JSON string to the file
+    if(fprintf(fp, "%s", res_str) < 0) {
+        // Handle error if writing fails
+        fprintf(stderr, "Error writing to file: %s\n", filename);
+    } else {
+        // Confirm successful data saving
+        printf("Data successfully saved to %s\n", filename);
+    }
+
+    // Close the file and release resources
+    fclose(fp);
+    free(res_str);              // Free the JSON string
+    json_decref(root);          // Release the JSON object
+}
+
+/*******************************************************************************
+ * @brief    Lädt den aktuellen Zustand der Webhouse-Umgebung aus einer Datei.
+ *           Gibt TRUE zurück, wenn das Laden erfolgreich war, sonst FALSE.
+ *
+ * @return   int
+ ******************************************************************************/
+static int LoadData(void)
+{
+    const char* filename = "data.json";
+
+    // Datei für das Lesen öffnen
+    FILE *fp = fopen(filename, "r");
+    if (!fp) {
+        fprintf(stderr, "Error opening file: %s\n", filename);
+        fflush(stderr);
+        return FALSE;
+    }
+
+    // Datei in einen String einlesen
+    char *buffer = NULL;
+    long length;
+    fseek(fp, 0, SEEK_END);
+    length = ftell(fp);
+    fseek(fp, 0, SEEK_SET);
+    buffer = malloc(length);
+    if (buffer) {
+        fread(buffer, 1, length, fp);
+    }
+    fclose(fp);
+
+    if (!buffer) {
+        fprintf(stderr, "Error reading file: %s\n", filename);
+        fflush(stderr);
+        return FALSE;
+    }
+
+    // JSON-String parsen
+    json_error_t error;
+    json_t *root = json_loads(buffer, 0, &error);
+    free(buffer);
+
+    if (!root) {
+        fprintf(stderr, "Error parsing JSON data: %s\n", error.text);
+        fflush(stderr);
+        return FALSE;
+    }
+
+    // Zustände aus dem JSON-Objekt extrahieren
+    json_t *tv = json_object_get(root, "tv");
+    if(json_is_integer(tv)){
+        if(json_integer_value(tv))
+            turnTVOn();
+        else
+            turnTVOff();
+    }
+
+    json_t *heater = json_object_get(root, "heater");
+    if(json_is_integer(heater)){
+        if(json_integer_value(heater))
+            turnHeatOn();
+        else
+            turnHeatOff();
+    }
+
+    json_t *led_pwm = json_object_get(root, "led_pwm");
+    if(json_is_integer(led_pwm)){
+        dutyCycleLed = (int)json_integer_value(led_pwm);
+    }
+
+    json_t *lamp_floor = json_object_get(root, "lamp_floor");
+    if(json_is_integer(lamp_floor)){
+        stateLampFloor = (int)json_integer_value(lamp_floor);
+        
+        if(json_integer_value(lamp_floor)){
+            dimSLamp((uint16_t)dutyCycleLed);
+        } else{
+            dimSLamp(0);
+        }
+    }
+
+    json_t *lamp_ceil = json_object_get(root, "lamp_ceil");
+    if(json_is_integer(lamp_ceil)){
+        stateLampCeiling = (int)json_integer_value(lamp_ceil);
+        
+        if(json_integer_value(lamp_ceil)){
+            dimRLamp((uint16_t)dutyCycleLed);
+        } else{
+            dimRLamp(0);
+        }
+    }
+
+    // JSON-Objekt freigeben
+    json_decref(root);
+
+    printf("Data loaded successfully from %s\n", filename);
+    return TRUE;
 }
 
 /*******************************************************************************
@@ -377,10 +563,10 @@ static int processCommand(char* command, char* response)
                     json_object_set_new(data, "temperature", json_real(getTemp()));
                 } else if (strcmp(utility_str, "alarm") == 0) {
                     json_object_set_new(data, "alarm", json_integer(getAlarmState()));
-                } else if (strcmp(utility_str, "lamp1") == 0) {
-                    json_object_set_new(data, "lamp1", json_integer(getLED1State()));
-                } else if (strcmp(utility_str, "lamp2") == 0) {
-                    json_object_set_new(data, "lamp2", json_integer(getLED2State()));
+                } else if (strcmp(utility_str, "lamp_floor") == 0) {
+                    json_object_set_new(data, "lamp_floor", json_integer(stateLampFloor));
+                } else if (strcmp(utility_str, "lamp_ceil") == 0) {
+                    json_object_set_new(data, "lamp_ceil", json_integer(stateLampCeiling));
                 } else if (strcmp(utility_str, "led_pwm") == 0) {
                     json_object_set_new(data, "led_pwm", json_integer(dutyCycleLed));
                 }
@@ -450,21 +636,21 @@ static int processCommand(char* command, char* response)
         else if (strcmp(utility_str, "heater") == 0) {
             getHeatState() ? turnHeatOff() : turnHeatOn();
         }
-        else if (strcmp(utility_str, "lamp1") == 0) {
-            if(getLED1State()){
-                turnLED1Off();
+        else if (strcmp(utility_str, "lamp_floor") == 0) {
+            if(stateLampFloor){
+                stateLampFloor = 0;
                 dimSLamp(0);
             } else{
-                turnLED1On();
+                stateLampFloor = 1;
                 dimSLamp((uint16_t)dutyCycleLed);
             }
         }
-        else if (strcmp(utility_str, "lamp2") == 0) {
-            if(getLED2State()){
-                turnLED2Off();
+        else if (strcmp(utility_str, "lamp_ceil") == 0) {
+            if(stateLampCeiling){
+                stateLampCeiling = 0;
                 dimRLamp(0);
             } else{
-                turnLED2On();
+                stateLampCeiling = 1;
                 dimRLamp((uint16_t)dutyCycleLed);
             }
         }
