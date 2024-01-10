@@ -1,5 +1,5 @@
 // Define the WebSocket connection
-var webSocket = new WebSocket("ws://192.168.2.100:8000");
+var webSocket = new WebSocket("ws://192.168.1.101:8000");
 
 // WebSocket event handlers
 
