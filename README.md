@@ -12,9 +12,9 @@ The project is organized into several directories, each serving a different role
 
 - **02_Server**: Holds the server-side application that interfaces with the Raspberry-Pi hardware to control the Webhouse utilities.
 
-- **05_Documentation**: Includes detailed documentation of the project, outlining its features, architecture, and user guides.
+- **03_Documentation**: Includes detailed documentation of the project, outlining its features, architecture, and user guides.
 
-- **09_Template**: Contains template files and configuration settings used across the project.
+- **04_Template**: Contains template files and configuration settings used across the project.
 
 Each directory has its own `README.md` providing detailed explanations and specific instructions related to the contents.
 
